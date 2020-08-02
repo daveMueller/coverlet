@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 
 using Coverlet.Core.Abstractions;
 using Coverlet.Core.Attributes;
+using coverlet.core.Symbols;
 using Coverlet.Core.Symbols;
 using Microsoft.Extensions.FileSystemGlobbing;
 using Mono.Cecil;
@@ -374,7 +375,12 @@ namespace Coverlet.Core.Instrumentation
 
         private void InstrumentType(TypeDefinition type)
         {
-            var methods = type.GetMethods();
+            var methods = type.GetMethods().ToList();
+            var compilerGeneratedMethods = type.NestedTypes.Where(x =>
+                x.CustomAttributes.Any(ca => ca.AttributeType.FullName == typeof(CompilerGeneratedAttribute).FullName))
+                .SelectMany(x => x.Methods.Where(y => y.DebugInformation.HasSequencePoints)).ToList();
+            var generatedMethods = CecilSymbolHelper.GetGeneratedMethods(compilerGeneratedMethods);
+            methods.AddRange(compilerGeneratedMethods);
 
             // We keep ordinal index because it's the way used by compiler for generated types/methods to 
             // avoid ambiguity
@@ -401,7 +407,7 @@ namespace Coverlet.Core.Instrumentation
 
                 if (!customAttributes.Any(IsExcludeAttribute))
                 {
-                    InstrumentMethod(method);
+                    InstrumentMethod(method, generatedMethods);
                 }
                 else
                 {
@@ -413,11 +419,11 @@ namespace Coverlet.Core.Instrumentation
             foreach (var ctor in ctors)
             {
                 if (!ctor.CustomAttributes.Any(IsExcludeAttribute))
-                    InstrumentMethod(ctor);
+                    InstrumentMethod(ctor, generatedMethods);
             }
         }
 
-        private void InstrumentMethod(MethodDefinition method)
+        private void InstrumentMethod(MethodDefinition method, IEnumerable<GeneratedMethod> generatedMethods)
         {
             var sourceFile = method.DebugInformation.SequencePoints.Select(s => _sourceRootTranslator.ResolveFilePath(s.Document.Url)).FirstOrDefault();
             if (!string.IsNullOrEmpty(sourceFile) && _excludedFilesHelper.Exclude(sourceFile))
@@ -436,10 +442,10 @@ namespace Coverlet.Core.Instrumentation
             if (method.IsNative)
                 return;
 
-            InstrumentIL(method);
+            InstrumentIL(method, generatedMethods);
         }
 
-        private void InstrumentIL(MethodDefinition method)
+        private void InstrumentIL(MethodDefinition method, IEnumerable<GeneratedMethod> generatedMethods)
         {
             method.Body.SimplifyMacros();
             ILProcessor processor = method.Body.GetILProcessor();
@@ -464,7 +470,8 @@ namespace Coverlet.Core.Instrumentation
 
                 if (sequencePoint != null && !sequencePoint.IsHidden)
                 {
-                    var target = AddInstrumentationCode(method, processor, instruction, sequencePoint);
+                    var generatedChildMethods = generatedMethods.Where(x => x.ParentMethodName.Equals(method.Name));
+                    var target = AddInstrumentationCode(method, processor, instruction, sequencePoint, generatedChildMethods);
                     foreach (var _instruction in processor.Body.Instructions)
                         ReplaceInstructionTarget(_instruction, instruction, target);
 
@@ -501,7 +508,7 @@ namespace Coverlet.Core.Instrumentation
             method.Body.OptimizeMacros();
         }
 
-        private Instruction AddInstrumentationCode(MethodDefinition method, ILProcessor processor, Instruction instruction, SequencePoint sequencePoint)
+        private Instruction AddInstrumentationCode(MethodDefinition method, ILProcessor processor, Instruction instruction, SequencePoint sequencePoint, IEnumerable<GeneratedMethod> generatedMethods)
         {
             if (!_result.Documents.TryGetValue(_sourceRootTranslator.ResolveFilePath(sequencePoint.Document.Url), out var document))
             {
@@ -510,10 +517,22 @@ namespace Coverlet.Core.Instrumentation
                 _result.Documents.Add(document.Path, document);
             }
 
+            var generatedMethodCalledInSequencePoint = generatedMethods.FirstOrDefault(x => 
+                x.StartLine >= sequencePoint.StartLine && x.EndLine <= sequencePoint.EndLine);
+
             for (int i = sequencePoint.StartLine; i <= sequencePoint.EndLine; i++)
             {
-                if (!document.Lines.ContainsKey(i))
-                    document.Lines.Add(i, new Line { Number = i, Class = method.DeclaringType.FullName, Method = method.FullName });
+                if (generatedMethodCalledInSequencePoint != null)
+                {
+                    if (!document.Lines.ContainsKey(i) && (i < generatedMethodCalledInSequencePoint?.StartLine || i > generatedMethodCalledInSequencePoint?.EndLine))
+                        document.Lines.Add(i, new Line { Number = i, Class = method.DeclaringType.FullName, Method = method.FullName });
+                }
+                else
+                {
+                    if (!document.Lines.ContainsKey(i))
+                        document.Lines.Add(i, new Line { Number = i, Class = method.DeclaringType.FullName, Method = method.FullName });
+                }
+
             }
 
             _result.HitCandidates.Add(new HitCandidate(false, document.Index, sequencePoint.StartLine, sequencePoint.EndLine));

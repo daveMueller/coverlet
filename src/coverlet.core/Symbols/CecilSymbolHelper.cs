@@ -7,9 +7,9 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-
+using System.Text.RegularExpressions;
 using Coverlet.Core.Extensions;
-
+using coverlet.core.Symbols;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
@@ -815,6 +815,13 @@ namespace Coverlet.Core.Symbols
             return prev;
         }
 
+        //private static bool SequencePointContainsBranchPoints()
+        //{
+        //    for each line create  branchpoint
+
+        //    ask in cecil for multiline conditional operator
+        //}
+
         private static bool HasValidSequencePoint(Instruction instruction, MethodDefinition methodDefinition)
         {
             var sp = methodDefinition.DebugInformation.GetSequencePoint(instruction);
@@ -827,6 +834,28 @@ namespace Coverlet.Core.Symbols
             {
                 return x.Offset.CompareTo(y.Offset);
             }
+        }
+
+        private static bool IsGeneratedMethod(string methodName)
+        {
+            return !string.IsNullOrWhiteSpace(methodName) && methodName.Contains("__") && Regex.IsMatch(methodName,
+                       @"(<[^\s:>]+>\w__\w)",
+                       RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.ExplicitCapture);
+        }
+
+        public static IEnumerable<GeneratedMethod> GetGeneratedMethods(IEnumerable<MethodDefinition> methods)
+        {
+            return methods.Select(x =>
+            {
+                var sequencePoints = x.DebugInformation.SequencePoints;
+                return new GeneratedMethod()
+                {
+                    ParentMethodName = x.Name.Split('>')[0].Substring(1),
+                    Method = x,
+                    StartLine = sequencePoints.First().StartLine,
+                    EndLine = sequencePoints.Last().EndLine
+                };
+            });
         }
     }
 }
