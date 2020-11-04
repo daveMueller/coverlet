@@ -85,5 +85,30 @@ namespace Coverlet.Core.Tests
                 File.Delete(path);
             }
         }
+
+        [Fact]
+        public void SelectionStatements_Switch_CSharp8()
+        {
+            string path = Path.GetTempFileName();
+            try
+            {
+                FunctionExecutor.RunInProcess(async (string[] pathSerialize) =>
+                {
+                    CoveragePrepareResult coveragePrepareResult = await TestInstrumentationHelper.Run<SelectionStatements>(instance =>
+                    {
+                        instance.SwitchCsharp8(int.MaxValue);
+                        return Task.CompletedTask;
+                    }, persistPrepareResultToFile: pathSerialize[0]);
+                    return 0;
+                }, new string[] { path });
+
+                CoverageResult result = TestInstrumentationHelper.GetCoverageResult(path);
+                result.GenerateReport(show: true);
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
     }
 }
