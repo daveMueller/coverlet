@@ -392,6 +392,9 @@ namespace Coverlet.Core
                     }
                 }
 
+                var overlappingHitCandidates = result.HitCandidates
+                    .Where(x => !x.isBranch && result.HitCandidates.Any(h => !h.isBranch && (h.start <=  x.start && h.end >= x.start) && !ReferenceEquals(h, x)));
+
                 List<(int docIndex, int line)> zeroHitsLines = new List<(int docIndex, int line)>();
                 var documentsList = result.Documents.Values.ToList();
                 using (var fs = _fileSystem.NewFileStream(result.HitsFilePath, FileMode.Open))
