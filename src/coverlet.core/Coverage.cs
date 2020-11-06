@@ -392,8 +392,28 @@ namespace Coverlet.Core
                     }
                 }
 
-                var overlappingHitCandidates = result.HitCandidates
-                    .Where(x => !x.isBranch && result.HitCandidates.Any(h => !h.isBranch && (h.start <=  x.start && h.end >= x.start) && !ReferenceEquals(h, x)));
+                var overlappingHitCandidates2 = result.HitCandidates
+                    .Where(x => !x.isBranch && result.HitCandidates.Any(h => !h.isBranch && (h.start <=  x.start && h.end >= x.start) && !ReferenceEquals(h, x))).ToList();
+
+
+                (HitCandidate, (int, int)) Act(HitCandidate currentCandidate, List<HitCandidate> overlappingHitCandidates)
+                {
+                    // if (!overlappingHitCandidates.Contains(currentCandidate)) return (currentCandidate, (0, 0));
+
+                    var overlappingCandidatesForCurrent = overlappingHitCandidates.Where(x => !ReferenceEquals(currentCandidate, x) && currentCandidate.start < x.start && currentCandidate.end >= x.end || (currentCandidate.start <= x.start && currentCandidate.end > x.end))
+                        .ToList();
+                    if (overlappingCandidatesForCurrent.Any())
+                    {
+                        var firstCoveredLine = overlappingCandidatesForCurrent.Min(x => x.start);
+                        var lastCoveredLine = overlappingCandidatesForCurrent.Max(x => x.end);
+
+                        return (currentCandidate, (firstCoveredLine, lastCoveredLine));
+                    }
+
+                    return (currentCandidate, (0, 0));
+                }
+
+                List<(HitCandidate hitCandidate, (int, int) skipRange)> hitData = result.HitCandidates.Select(x => Act(x, overlappingHitCandidates2)).ToList();
 
                 List<(int docIndex, int line)> zeroHitsLines = new List<(int docIndex, int line)>();
                 var documentsList = result.Documents.Values.ToList();
@@ -406,7 +426,9 @@ namespace Coverlet.Core
 
                     for (int i = 0; i < hitCandidatesCount; ++i)
                     {
-                        var hitLocation = result.HitCandidates[i];
+                        //var hitLocation = result.HitCandidates[i];
+                        var data = hitData[i];
+                        var hitLocation = data.hitCandidate;
                         var document = documentsList[hitLocation.docIndex];
                         int hits = br.ReadInt32();
 
@@ -419,6 +441,8 @@ namespace Coverlet.Core
                         {
                             for (int j = hitLocation.start; j <= hitLocation.end; j++)
                             {
+                                if(j >= data.skipRange.Item1 && j <= data.skipRange.Item2) continue;
+
                                 var line = document.Lines[j];
                                 line.Hits += hits;
 
@@ -433,16 +457,16 @@ namespace Coverlet.Core
                 }
 
                 // Cleanup nested state machine false positive hits
-                foreach (var (docIndex, line) in zeroHitsLines)
-                {
-                    foreach (var lineToCheck in documentsList[docIndex].Lines)
-                    {
-                        if (lineToCheck.Key == line)
-                        {
-                            lineToCheck.Value.Hits = 0;
-                        }
-                    }
-                }
+                //foreach (var (docIndex, line) in zeroHitsLines)
+                //{
+                //    foreach (var lineToCheck in documentsList[docIndex].Lines)
+                //    {
+                //        if (lineToCheck.Key == line)
+                //        {
+                //            lineToCheck.Value.Hits = 0;
+                //        }
+                //    }
+                //}
 
                 _instrumentationHelper.DeleteHitsFile(result.HitsFilePath);
                 _logger.LogVerbose($"Hit file '{result.HitsFilePath}' deleted");
