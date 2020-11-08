@@ -396,12 +396,13 @@ namespace Coverlet.Core
                     .Where(x => !x.isBranch && result.HitCandidates.Any(h => !h.isBranch && (h.start <=  x.start && h.end >= x.start) && !ReferenceEquals(h, x))).ToList();
 
 
-                (HitCandidate, (int, int)) Act(HitCandidate currentCandidate, List<HitCandidate> overlappingHitCandidates)
+                static (HitCandidate, (int, int)) OverlapMeta(HitCandidate currentCandidate, List<HitCandidate> overlappingHitCandidates)
                 {
                     // if (!overlappingHitCandidates.Contains(currentCandidate)) return (currentCandidate, (0, 0));
 
-                    var overlappingCandidatesForCurrent = overlappingHitCandidates.Where(x => !ReferenceEquals(currentCandidate, x) && currentCandidate.start < x.start && currentCandidate.end >= x.end || (currentCandidate.start <= x.start && currentCandidate.end > x.end))
-                        .ToList();
+                    var overlappingCandidatesForCurrent = overlappingHitCandidates.Where(x => !ReferenceEquals(currentCandidate, x) 
+                                                                                              && currentCandidate.start < x.start && currentCandidate.end >= x.end 
+                                                                                              || (currentCandidate.start <= x.start && currentCandidate.end > x.end)).ToList();
                     if (overlappingCandidatesForCurrent.Any())
                     {
                         var firstCoveredLine = overlappingCandidatesForCurrent.Min(x => x.start);
@@ -413,9 +414,9 @@ namespace Coverlet.Core
                     return (currentCandidate, (0, 0));
                 }
 
-                List<(HitCandidate hitCandidate, (int, int) skipRange)> hitData = result.HitCandidates.Select(x => Act(x, overlappingHitCandidates2)).ToList();
+                List<(HitCandidate hitCandidate, (int, int) skipRange)> hitData = result.HitCandidates.Select(x => OverlapMeta(x, overlappingHitCandidates2)).ToList();
 
-                List<(int docIndex, int line)> zeroHitsLines = new List<(int docIndex, int line)>();
+                //List<(int docIndex, int line)> zeroHitsLines = new List<(int docIndex, int line)>();
                 var documentsList = result.Documents.Values.ToList();
                 using (var fs = _fileSystem.NewFileStream(result.HitsFilePath, FileMode.Open))
                 using (var br = new BinaryReader(fs))
@@ -447,10 +448,10 @@ namespace Coverlet.Core
                                 line.Hits += hits;
 
                                 // We register 0 hit lines for later cleanup false positive of nested lambda closures
-                                if (hits == 0)
-                                {
-                                    zeroHitsLines.Add((hitLocation.docIndex, line.Number));
-                                }
+                                //if (hits == 0)
+                                //{
+                                //    zeroHitsLines.Add((hitLocation.docIndex, line.Number));
+                                //}
                             }
                         }
                     }
