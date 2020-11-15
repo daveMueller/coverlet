@@ -392,30 +392,8 @@ namespace Coverlet.Core
                     }
                 }
 
-                var overlappingHitCandidates2 = result.HitCandidates
-                    .Where(x => !x.isBranch && result.HitCandidates.Any(h => !h.isBranch && (h.start <=  x.start && h.end >= x.start) && !ReferenceEquals(h, x))).ToList();
-
-
-                static (HitCandidate, (int, int)) OverlapMeta(HitCandidate currentCandidate, List<HitCandidate> overlappingHitCandidates)
-                {
-                    // if (!overlappingHitCandidates.Contains(currentCandidate)) return (currentCandidate, (0, 0));
-
-                    var overlappingCandidatesForCurrent = overlappingHitCandidates.Where(x => !ReferenceEquals(currentCandidate, x) 
-                                                                                              && currentCandidate.start < x.start && currentCandidate.end >= x.end 
-                                                                                              || (currentCandidate.start <= x.start && currentCandidate.end > x.end)).ToList();
-                    if (overlappingCandidatesForCurrent.Any())
-                    {
-                        var firstCoveredLine = overlappingCandidatesForCurrent.Min(x => x.start);
-                        var lastCoveredLine = overlappingCandidatesForCurrent.Max(x => x.end);
-
-                        return (currentCandidate, (firstCoveredLine, lastCoveredLine));
-                    }
-
-                    return (currentCandidate, (0, 0));
-                }
-
-                List<(HitCandidate hitCandidate, (int, int) skipRange)> hitData = result.HitCandidates.Select(x => OverlapMeta(x, overlappingHitCandidates2)).ToList();
-
+                List<(HitCandidate hitCandidate, (int start, int end) rangeToSkip)> hitData = result.HitCandidates.Select(x => (x, RangeToSkip(x, result.HitCandidates))).ToList();
+                
                 //List<(int docIndex, int line)> zeroHitsLines = new List<(int docIndex, int line)>();
                 var documentsList = result.Documents.Values.ToList();
                 using (var fs = _fileSystem.NewFileStream(result.HitsFilePath, FileMode.Open))
@@ -428,8 +406,7 @@ namespace Coverlet.Core
                     for (int i = 0; i < hitCandidatesCount; ++i)
                     {
                         //var hitLocation = result.HitCandidates[i];
-                        var data = hitData[i];
-                        var hitLocation = data.hitCandidate;
+                        var (hitLocation, rangeToSkip) = hitData[i];
                         var document = documentsList[hitLocation.docIndex];
                         int hits = br.ReadInt32();
 
@@ -442,7 +419,7 @@ namespace Coverlet.Core
                         {
                             for (int j = hitLocation.start; j <= hitLocation.end; j++)
                             {
-                                if(j >= data.skipRange.Item1 && j <= data.skipRange.Item2) continue;
+                                if(j >= rangeToSkip.start && j <= rangeToSkip.end) continue;
 
                                 var line = document.Lines[j];
                                 line.Hits += hits;
@@ -526,6 +503,23 @@ namespace Coverlet.Core
 
             url = sourceLinkDocuments[keyWithBestMatch];
             return url.Replace("*", replacement);
+        }
+
+        private static (int, int) RangeToSkip(HitCandidate hitCandidate, IEnumerable<HitCandidate> hitCandidates)
+        {
+            var nestedHitCandidates = hitCandidates.Where(x => !ReferenceEquals(hitCandidate, x) && !x.isBranch
+                                                                                                 && (hitCandidate.start < x.start && hitCandidate.end >= x.end
+                                                                                                     || hitCandidate.start <= x.start && hitCandidate.end > x.end)).ToList();
+
+            if (nestedHitCandidates.Any())
+            {
+                var firstCoveredLine = nestedHitCandidates.Min(x => x.start);
+                var lastCoveredLine = nestedHitCandidates.Max(x => x.end);
+
+                return (firstCoveredLine, lastCoveredLine);
+            }
+
+            return (0, 0);
         }
     }
 }
