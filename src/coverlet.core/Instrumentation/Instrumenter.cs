@@ -238,8 +238,12 @@ namespace Coverlet.Core.Instrumentation
                     }
 
                     var containsAppContext = module.GetType(nameof(System), nameof(AppContext)) != null;
-                    var types = module.GetTypes();
+                    var types = module.GetTypes().ToList();
                     AddCustomModuleTrackerToModule(module);
+
+                    var sequencePoints = types.Where(x => !Is_System_Threading_Interlocked_CoreLib_Type(x) && !IsTypeExcluded(x) && _instrumentationHelper.IsTypeIncluded(_module, x.FullName, _includeFilters)).
+                        SelectMany(x => x.Methods.SelectMany(y => y.DebugInformation.SequencePoints)).ToList();
+                    List<(SequencePoint SequencePoint, (int start, int end) rangeToSkip)> sequencePointData = sequencePoints.Select(x => (x, RangeToSkip(x, sequencePoints))).ToList();
 
                     var sourceLinkDebugInfo = module.CustomDebugInformations.FirstOrDefault(c => c.Kind == CustomDebugInformationKind.SourceLink);
                     if (sourceLinkDebugInfo != null)
@@ -261,7 +265,7 @@ namespace Coverlet.Core.Instrumentation
                             }
                             else
                             {
-                                InstrumentType(type);
+                                InstrumentType(type, sequencePointData);
                             }
                         }
                     }
@@ -449,7 +453,7 @@ namespace Coverlet.Core.Instrumentation
             return false;
         }
 
-        private void InstrumentType(TypeDefinition type)
+        private void InstrumentType(TypeDefinition type, List<(SequencePoint SequencePoint, (int start, int end) rangeToSkip)> sequencePointData)
         {
             var methods = type.GetMethods();
 
@@ -489,7 +493,7 @@ namespace Coverlet.Core.Instrumentation
 
                 if (!customAttributes.Any(IsExcludeAttribute))
                 {
-                    InstrumentMethod(method);
+                    InstrumentMethod(method, sequencePointData);
                 }
                 else
                 {
@@ -502,12 +506,12 @@ namespace Coverlet.Core.Instrumentation
             {
                 if (!ctor.CustomAttributes.Any(IsExcludeAttribute))
                 {
-                    InstrumentMethod(ctor);
+                    InstrumentMethod(ctor, sequencePointData);
                 }
             }
         }
 
-        private void InstrumentMethod(MethodDefinition method)
+        private void InstrumentMethod(MethodDefinition method, List<(SequencePoint, (int, int))> sequencePointData)
         {
             var sourceFile = method.DebugInformation.SequencePoints.Select(s => _sourceRootTranslator.ResolveFilePath(s.Document.Url)).FirstOrDefault();
             if (!string.IsNullOrEmpty(sourceFile) && _excludedFilesHelper.Exclude(sourceFile))
@@ -526,10 +530,10 @@ namespace Coverlet.Core.Instrumentation
             if (method.IsNative)
                 return;
 
-            InstrumentIL(method);
+            InstrumentIL(method, sequencePointData);
         }
 
-        private void InstrumentIL(MethodDefinition method)
+        private void InstrumentIL(MethodDefinition method, List<(SequencePoint, (int, int) linesToSkip)> sequencePointData)
         {
             method.Body.SimplifyMacros();
             ILProcessor processor = method.Body.GetILProcessor();
@@ -546,6 +550,7 @@ namespace Coverlet.Core.Instrumentation
             {
                 var instruction = processor.Body.Instructions[index];
                 var sequencePoint = method.DebugInformation.GetSequencePoint(instruction);
+                var linesToSkip = sequencePointData.FirstOrDefault(x => ReferenceEquals(x.Item1, sequencePoint)).linesToSkip;
                 var targetedBranchPoints = branchPoints.Where(p => p.EndOffset == instruction.Offset);
 
                 // make sure we're looking at the correct unreachable range (if any)
@@ -572,7 +577,7 @@ namespace Coverlet.Core.Instrumentation
 
                 if (sequencePoint != null && !sequencePoint.IsHidden)
                 {
-                    var target = AddInstrumentationCode(method, processor, instruction, sequencePoint);
+                    var target = AddInstrumentationCode(method, processor, instruction, sequencePoint, linesToSkip);
                     foreach (var _instruction in processor.Body.Instructions)
                         ReplaceInstructionTarget(_instruction, instruction, target);
 
@@ -609,7 +614,7 @@ namespace Coverlet.Core.Instrumentation
             method.Body.OptimizeMacros();
         }
 
-        private Instruction AddInstrumentationCode(MethodDefinition method, ILProcessor processor, Instruction instruction, SequencePoint sequencePoint)
+        private Instruction AddInstrumentationCode(MethodDefinition method, ILProcessor processor, Instruction instruction, SequencePoint sequencePoint, (int start, int end) rangeToSkip)
         {
             if (!_result.Documents.TryGetValue(_sourceRootTranslator.ResolveFilePath(sequencePoint.Document.Url), out var document))
             {
@@ -620,11 +625,12 @@ namespace Coverlet.Core.Instrumentation
 
             for (int i = sequencePoint.StartLine; i <= sequencePoint.EndLine; i++)
             {
+                if(i >=  rangeToSkip.start && i <= rangeToSkip.end) continue;
                 if (!document.Lines.ContainsKey(i))
                     document.Lines.Add(i, new Line { Number = i, Class = method.DeclaringType.FullName, Method = method.FullName });
             }
 
-            _result.HitCandidates.Add(new HitCandidate(false, document.Index, sequencePoint.StartLine, sequencePoint.EndLine));
+            _result.HitCandidates.Add(new HitCandidate(false, document.Index, sequencePoint.StartLine, sequencePoint.EndLine, rangeToSkip));
 
             return AddInstrumentationInstructions(method, processor, instruction, _result.HitCandidates.Count - 1);
         }
@@ -669,7 +675,7 @@ namespace Coverlet.Core.Instrumentation
                 }
             }
 
-            _result.HitCandidates.Add(new HitCandidate(true, document.Index, branchPoint.StartLine, (int)branchPoint.Ordinal));
+            _result.HitCandidates.Add(new HitCandidate(true, document.Index, branchPoint.StartLine, (int)branchPoint.Ordinal, (0, 0)));
 
             return AddInstrumentationInstructions(method, processor, instruction, _result.HitCandidates.Count - 1);
         }
@@ -759,6 +765,23 @@ namespace Coverlet.Core.Instrumentation
             {
                 return null;
             }
+        }
+
+        private static (int, int) RangeToSkip(SequencePoint sequencePoint, IEnumerable<SequencePoint> sequencePoints)
+        {
+            var nestedHitCandidates = sequencePoints.Where(x => !ReferenceEquals(sequencePoint, x) 
+                                                                && (sequencePoint.StartLine < x.StartLine && sequencePoint.EndLine >= x.EndLine
+                                                                    || sequencePoint.StartLine <= x.StartLine && sequencePoint.EndLine > x.EndLine)).ToList();
+
+            if (nestedHitCandidates.Any())
+            {
+                var firstCoveredLine = nestedHitCandidates.Min(x => x.StartLine);
+                var lastCoveredLine = nestedHitCandidates.Max(x => x.EndLine);
+
+                return (firstCoveredLine, lastCoveredLine);
+            }
+
+            return (0, 0);
         }
 
         // Check if the member (type or method) is generated by the compiler from a method excluded from code coverage

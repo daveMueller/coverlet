@@ -78,7 +78,7 @@ namespace Coverlet.Core.Instrumentation
     [DataContract]
     internal class HitCandidate
     {
-        public HitCandidate(bool isBranch, int docIndex, int start, int end) => (this.isBranch, this.docIndex, this.start, this.end) = (isBranch, docIndex, start, end);
+        public HitCandidate(bool isBranch, int docIndex, int start, int end, (int, int) rangeToSkip) => (this.isBranch, this.docIndex, this.start, this.end, this.rangeToSkip) = (isBranch, docIndex, start, end, rangeToSkip);
 
         [DataMember]
         public bool isBranch { get; set; }
@@ -88,6 +88,8 @@ namespace Coverlet.Core.Instrumentation
         public int start { get; set; }
         [DataMember]
         public int end { get; set; }
+        [DataMember]
+        public (int start, int end) rangeToSkip { get; set; }
     }
 
     [DataContract]

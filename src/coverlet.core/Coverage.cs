@@ -392,7 +392,7 @@ namespace Coverlet.Core
                     }
                 }
 
-                List<(HitCandidate hitCandidate, (int start, int end) rangeToSkip)> hitData = result.HitCandidates.Select(x => (x, RangeToSkip(x, result.HitCandidates))).ToList();
+                //List<(HitCandidate hitCandidate, (int start, int end) rangeToSkip)> hitData = result.HitCandidates.Select(x => (x, RangeToSkip(x, result.HitCandidates))).ToList();
                 
                 //List<(int docIndex, int line)> zeroHitsLines = new List<(int docIndex, int line)>();
                 var documentsList = result.Documents.Values.ToList();
@@ -405,8 +405,8 @@ namespace Coverlet.Core
 
                     for (int i = 0; i < hitCandidatesCount; ++i)
                     {
-                        //var hitLocation = result.HitCandidates[i];
-                        var (hitLocation, rangeToSkip) = hitData[i];
+                        var hitLocation = result.HitCandidates[i];
+                        //var (hitLocation, rangeToSkip) = hitData[i];
                         var document = documentsList[hitLocation.docIndex];
                         int hits = br.ReadInt32();
 
@@ -419,7 +419,7 @@ namespace Coverlet.Core
                         {
                             for (int j = hitLocation.start; j <= hitLocation.end; j++)
                             {
-                                if(j >= rangeToSkip.start && j <= rangeToSkip.end) continue;
+                                if(j >= hitLocation.rangeToSkip.start && j <= hitLocation.rangeToSkip.end) continue;
 
                                 var line = document.Lines[j];
                                 line.Hits += hits;

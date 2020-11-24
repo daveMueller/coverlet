@@ -38,8 +38,8 @@ namespace Coverlet.Core.Instrumentation.Tests
             ir.ModulePath = "ModulePath";
             ir.SourceLink = "SourceLink";
 
-            ir.HitCandidates.Add(new HitCandidate(true, 1, 2, 3));
-            ir.HitCandidates.Add(new HitCandidate(false, 4, 5, 6));
+            ir.HitCandidates.Add(new HitCandidate(true, 1, 2, 3, (0, 0)));
+            ir.HitCandidates.Add(new HitCandidate(false, 4, 5, 6, (0, 0)));
 
             var doc = new Document()
             {
