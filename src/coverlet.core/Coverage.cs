@@ -392,9 +392,6 @@ namespace Coverlet.Core
                     }
                 }
 
-                //List<(HitCandidate hitCandidate, (int start, int end) rangeToSkip)> hitData = result.HitCandidates.Select(x => (x, RangeToSkip(x, result.HitCandidates))).ToList();
-                
-                //List<(int docIndex, int line)> zeroHitsLines = new List<(int docIndex, int line)>();
                 var documentsList = result.Documents.Values.ToList();
                 using (var fs = _fileSystem.NewFileStream(result.HitsFilePath, FileMode.Open))
                 using (var br = new BinaryReader(fs))
@@ -406,7 +403,6 @@ namespace Coverlet.Core
                     for (int i = 0; i < hitCandidatesCount; ++i)
                     {
                         var hitLocation = result.HitCandidates[i];
-                        //var (hitLocation, rangeToSkip) = hitData[i];
                         var document = documentsList[hitLocation.docIndex];
                         int hits = br.ReadInt32();
 
@@ -423,28 +419,10 @@ namespace Coverlet.Core
 
                                 var line = document.Lines[j];
                                 line.Hits += hits;
-
-                                // We register 0 hit lines for later cleanup false positive of nested lambda closures
-                                //if (hits == 0)
-                                //{
-                                //    zeroHitsLines.Add((hitLocation.docIndex, line.Number));
-                                //}
                             }
                         }
                     }
                 }
-
-                // Cleanup nested state machine false positive hits
-                //foreach (var (docIndex, line) in zeroHitsLines)
-                //{
-                //    foreach (var lineToCheck in documentsList[docIndex].Lines)
-                //    {
-                //        if (lineToCheck.Key == line)
-                //        {
-                //            lineToCheck.Value.Hits = 0;
-                //        }
-                //    }
-                //}
 
                 _instrumentationHelper.DeleteHitsFile(result.HitsFilePath);
                 _logger.LogVerbose($"Hit file '{result.HitsFilePath}' deleted");
@@ -503,23 +481,6 @@ namespace Coverlet.Core
 
             url = sourceLinkDocuments[keyWithBestMatch];
             return url.Replace("*", replacement);
-        }
-
-        private static (int, int) RangeToSkip(HitCandidate hitCandidate, IEnumerable<HitCandidate> hitCandidates)
-        {
-            var nestedHitCandidates = hitCandidates.Where(x => !ReferenceEquals(hitCandidate, x) && !x.isBranch
-                                                                                                 && (hitCandidate.start < x.start && hitCandidate.end >= x.end
-                                                                                                     || hitCandidate.start <= x.start && hitCandidate.end > x.end)).ToList();
-
-            if (nestedHitCandidates.Any())
-            {
-                var firstCoveredLine = nestedHitCandidates.Min(x => x.start);
-                var lastCoveredLine = nestedHitCandidates.Max(x => x.end);
-
-                return (firstCoveredLine, lastCoveredLine);
-            }
-
-            return (0, 0);
         }
     }
 }

@@ -241,9 +241,8 @@ namespace Coverlet.Core.Instrumentation
                     var types = module.GetTypes().ToList();
                     AddCustomModuleTrackerToModule(module);
 
-                    var sequencePoints = types.Where(x => !Is_System_Threading_Interlocked_CoreLib_Type(x) && !IsTypeExcluded(x) && _instrumentationHelper.IsTypeIncluded(_module, x.FullName, _includeFilters)).
-                        SelectMany(x => x.Methods.SelectMany(y => y.DebugInformation.SequencePoints)).ToList();
-                    List<(SequencePoint SequencePoint, (int start, int end) rangeToSkip)> sequencePointData = sequencePoints.Select(x => (x, RangeToSkip(x, sequencePoints))).ToList();
+                    var sequencePoints = types.Where(x => _instrumentationHelper.IsTypeIncluded(_module, x.FullName, _includeFilters))
+                        .SelectMany(x => x.Methods.SelectMany(y => y.DebugInformation.SequencePoints)).ToList();
 
                     var sourceLinkDebugInfo = module.CustomDebugInformations.FirstOrDefault(c => c.Kind == CustomDebugInformationKind.SourceLink);
                     if (sourceLinkDebugInfo != null)
@@ -265,7 +264,7 @@ namespace Coverlet.Core.Instrumentation
                             }
                             else
                             {
-                                InstrumentType(type, sequencePointData);
+                                InstrumentType(type, sequencePoints);
                             }
                         }
                     }
@@ -453,10 +452,10 @@ namespace Coverlet.Core.Instrumentation
             return false;
         }
 
-        private void InstrumentType(TypeDefinition type, List<(SequencePoint SequencePoint, (int start, int end) rangeToSkip)> sequencePointData)
+        private void InstrumentType(TypeDefinition type, List<SequencePoint> sequencePoints)
         {
             var methods = type.GetMethods();
-
+            
             // We keep ordinal index because it's the way used by compiler for generated types/methods to 
             // avoid ambiguity
             int ordinal = -1;
@@ -493,7 +492,7 @@ namespace Coverlet.Core.Instrumentation
 
                 if (!customAttributes.Any(IsExcludeAttribute))
                 {
-                    InstrumentMethod(method, sequencePointData);
+                    InstrumentMethod(method, sequencePoints);
                 }
                 else
                 {
@@ -506,12 +505,12 @@ namespace Coverlet.Core.Instrumentation
             {
                 if (!ctor.CustomAttributes.Any(IsExcludeAttribute))
                 {
-                    InstrumentMethod(ctor, sequencePointData);
+                    InstrumentMethod(ctor, sequencePoints);
                 }
             }
         }
 
-        private void InstrumentMethod(MethodDefinition method, List<(SequencePoint, (int, int))> sequencePointData)
+        private void InstrumentMethod(MethodDefinition method, IEnumerable<SequencePoint> sequencePoints)
         {
             var sourceFile = method.DebugInformation.SequencePoints.Select(s => _sourceRootTranslator.ResolveFilePath(s.Document.Url)).FirstOrDefault();
             if (!string.IsNullOrEmpty(sourceFile) && _excludedFilesHelper.Exclude(sourceFile))
@@ -530,10 +529,10 @@ namespace Coverlet.Core.Instrumentation
             if (method.IsNative)
                 return;
 
-            InstrumentIL(method, sequencePointData);
+            InstrumentIL(method, sequencePoints);
         }
 
-        private void InstrumentIL(MethodDefinition method, List<(SequencePoint, (int, int) linesToSkip)> sequencePointData)
+        private void InstrumentIL(MethodDefinition method, IEnumerable<SequencePoint> sequencePoints)
         {
             method.Body.SimplifyMacros();
             ILProcessor processor = method.Body.GetILProcessor();
@@ -550,7 +549,6 @@ namespace Coverlet.Core.Instrumentation
             {
                 var instruction = processor.Body.Instructions[index];
                 var sequencePoint = method.DebugInformation.GetSequencePoint(instruction);
-                var linesToSkip = sequencePointData.FirstOrDefault(x => ReferenceEquals(x.Item1, sequencePoint)).linesToSkip;
                 var targetedBranchPoints = branchPoints.Where(p => p.EndOffset == instruction.Offset);
 
                 // make sure we're looking at the correct unreachable range (if any)
@@ -577,7 +575,7 @@ namespace Coverlet.Core.Instrumentation
 
                 if (sequencePoint != null && !sequencePoint.IsHidden)
                 {
-                    var target = AddInstrumentationCode(method, processor, instruction, sequencePoint, linesToSkip);
+                    var target = AddInstrumentationCode(method, processor, instruction, sequencePoint, sequencePoints);
                     foreach (var _instruction in processor.Body.Instructions)
                         ReplaceInstructionTarget(_instruction, instruction, target);
 
@@ -614,7 +612,7 @@ namespace Coverlet.Core.Instrumentation
             method.Body.OptimizeMacros();
         }
 
-        private Instruction AddInstrumentationCode(MethodDefinition method, ILProcessor processor, Instruction instruction, SequencePoint sequencePoint, (int start, int end) rangeToSkip)
+        private Instruction AddInstrumentationCode(MethodDefinition method, ILProcessor processor, Instruction instruction, SequencePoint sequencePoint, IEnumerable<SequencePoint> sequencePoints)
         {
             if (!_result.Documents.TryGetValue(_sourceRootTranslator.ResolveFilePath(sequencePoint.Document.Url), out var document))
             {
@@ -623,14 +621,16 @@ namespace Coverlet.Core.Instrumentation
                 _result.Documents.Add(document.Path, document);
             }
 
+            (int start, int end) linesToSkip = RangeToSkip(sequencePoint, sequencePoints);
+
             for (int i = sequencePoint.StartLine; i <= sequencePoint.EndLine; i++)
             {
-                if(i >=  rangeToSkip.start && i <= rangeToSkip.end) continue;
+                if(i >= linesToSkip.start && i <= linesToSkip.end) continue;
                 if (!document.Lines.ContainsKey(i))
                     document.Lines.Add(i, new Line { Number = i, Class = method.DeclaringType.FullName, Method = method.FullName });
             }
 
-            _result.HitCandidates.Add(new HitCandidate(false, document.Index, sequencePoint.StartLine, sequencePoint.EndLine, rangeToSkip));
+            _result.HitCandidates.Add(new HitCandidate(false, document.Index, sequencePoint.StartLine, sequencePoint.EndLine, linesToSkip));
 
             return AddInstrumentationInstructions(method, processor, instruction, _result.HitCandidates.Count - 1);
         }
