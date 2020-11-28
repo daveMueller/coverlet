@@ -30,7 +30,8 @@ namespace Coverlet.Core.Samples.Tests
         }
 
         public string SwitchCsharp8(object value) => 
-            value switch
+            value 
+                switch
                 {
                     int i => i.ToString(System.Globalization.CultureInfo.InvariantCulture),
                     uint ui => ui.ToString(System.Globalization.CultureInfo.InvariantCulture),

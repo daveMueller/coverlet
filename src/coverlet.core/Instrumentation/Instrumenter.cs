@@ -566,8 +566,10 @@ namespace Coverlet.Core.Instrumentation
                     isUnreachable = instrOffset >= range.StartOffset && instrOffset <= range.EndOffset;
                 }
 
-                // Check is both reachable, _and_ coverable
-                if (isUnreachable || _cecilSymbolHelper.SkipNotCoverableInstruction(method, instruction))
+                // Check is both reachable, _and_ coverable _and_ no injected switch breakpoint
+                if (isUnreachable || _cecilSymbolHelper.SkipNotCoverableInstruction(method, instruction) ||
+                    _cecilSymbolHelper.SkipGeneratedBreakpointsSwitchExpression(processor.Body.Instructions.ToList(),
+                        instruction, method))
                 {
                     index++;
                     continue;
@@ -621,7 +623,8 @@ namespace Coverlet.Core.Instrumentation
                 _result.Documents.Add(document.Path, document);
             }
 
-            (int start, int end) linesToSkip = RangeToSkip(sequencePoint, sequencePoints);
+            var sequencePointToSkip = _cecilSymbolHelper.SequencePointToSkip(method.Body.Instructions.ToList(), instruction, method);
+            (int start, int end) linesToSkip = LinesToSkip(sequencePoint, sequencePoints, sequencePointToSkip);
 
             for (int i = sequencePoint.StartLine; i <= sequencePoint.EndLine; i++)
             {
@@ -767,10 +770,10 @@ namespace Coverlet.Core.Instrumentation
             }
         }
 
-        private static (int, int) RangeToSkip(SequencePoint sequencePoint, IEnumerable<SequencePoint> sequencePoints)
+        private static (int, int) LinesToSkip(SequencePoint sequencePoint, IEnumerable<SequencePoint> sequencePoints, SequencePoint sequencePointToSkip)
         {
-            var nestedHitCandidates = sequencePoints.Where(x => !ReferenceEquals(sequencePoint, x) 
-                                                                && (sequencePoint.StartLine < x.StartLine && sequencePoint.EndLine >= x.EndLine
+            var nestedHitCandidates = sequencePoints.Where(x => !ReferenceEquals(sequencePoint, x) && !ReferenceEquals(x, sequencePointToSkip)
+                                                                && (sequencePoint.StartLine < x.StartLine && sequencePoint.EndLine >= x.EndLine 
                                                                     || sequencePoint.StartLine <= x.StartLine && sequencePoint.EndLine > x.EndLine)).ToList();
 
             if (nestedHitCandidates.Any())

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Coverlet.Core.Abstractions;
@@ -228,6 +229,44 @@ namespace Coverlet.Core.Symbols
                 }
             }
             return false;
+        }
+
+        /*
+            ldc.i4 1
+            brtrue.s L
+            // sequence point
+            nop
+            L:
+            // hidden sequence point
+         */
+        public bool SkipGeneratedBreakpointsSwitchExpression(List<Instruction> instructions,
+            Instruction instruction, MethodDefinition method)
+        {
+            int currentIndex = instructions.BinarySearch(instruction, new InstructionByOffsetComparer());
+            return currentIndex >= 2 &&
+                   instructions[currentIndex - 2].OpCode == OpCodes.Ldc_I4 &&
+                   instructions[currentIndex - 1].OpCode == OpCodes.Brtrue &&
+                   instruction.OpCode == OpCodes.Nop &&
+                   method.DebugInformation.GetSequencePoint(instruction) != null &&
+                   instructions.Count - currentIndex >= 1 &&
+                   method.DebugInformation.GetSequencePoint(instructions[currentIndex + 1]).IsHidden;
+        }
+
+        public SequencePoint SequencePointToSkip(List<Instruction> instructions,
+            Instruction instruction, MethodDefinition method)
+        {
+            SequencePoint sequencePointToSkip = null;
+            int currentIndex = instructions.BinarySearch(instruction, new InstructionByOffsetComparer());
+            if (instruction.OpCode == OpCodes.Ldc_I4 &&
+                instructions.Count - currentIndex >= 3 &&
+                instructions[currentIndex + 1].OpCode == OpCodes.Brtrue &&
+                instructions[currentIndex + 2].OpCode == OpCodes.Nop &&
+                method.DebugInformation.GetSequencePoint(instructions[currentIndex + 2]) != null &&
+                method.DebugInformation.GetSequencePoint(instructions[currentIndex + 3]).IsHidden)
+            {
+                sequencePointToSkip = method.DebugInformation.GetSequencePoint(instructions[currentIndex + 2]);
+            }
+            return sequencePointToSkip;
         }
 
         private static bool SkipGeneratedBranchForExceptionRethrown(List<Instruction> instructions, Instruction instruction)

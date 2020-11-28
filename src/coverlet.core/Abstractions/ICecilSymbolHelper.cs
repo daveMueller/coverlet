@@ -9,5 +9,7 @@ namespace Coverlet.Core.Abstractions
     {
         IReadOnlyList<BranchPoint> GetBranchPoints(MethodDefinition methodDefinition);
         bool SkipNotCoverableInstruction(MethodDefinition methodDefinition, Instruction instruction);
+        bool SkipGeneratedBreakpointsSwitchExpression(List<Instruction> instructions, Instruction instruction, MethodDefinition method);
+        SequencePoint SequencePointToSkip(List<Instruction> instructions, Instruction instruction, MethodDefinition method);
     }
 }
