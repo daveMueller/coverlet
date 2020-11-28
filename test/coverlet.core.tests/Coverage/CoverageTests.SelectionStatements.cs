@@ -97,15 +97,14 @@ namespace Coverlet.Core.Tests
                     CoveragePrepareResult coveragePrepareResult = await TestInstrumentationHelper.Run<SelectionStatements>(instance =>
                     {
                         instance.SwitchCsharp8(int.MaxValue);
-                        instance.SwitchCsharp8MultiLine(short.MaxValue);
                         return Task.CompletedTask;
                     }, persistPrepareResultToFile: pathSerialize[0]);
                     return 0;
                 }, new string[] { path });
 
                 TestInstrumentationHelper.GetCoverageResult(path).Document("Instrumentation.SelectionStatements.cs")
-                    .AssertLinesCovered(BuildConfiguration.Debug, (33, 1), (34, 1), (35, 1), (36, 0), (37, 0), (38, 0),
-                        (39, 1), (42, 1), (43, 1), (44, 1), (45, 0), (46, 0), (47, 1), (48, 0), (49, 1));
+                    .AssertLinesCovered(BuildConfiguration.Debug, (33, 1), (34, 1), (35, 1), (36, 1), (37, 0), (38, 0),
+                        (39, 0), (40, 1));
             }
             finally
             {
