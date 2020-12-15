@@ -29,7 +29,7 @@ namespace Coverlet.Core
 
     internal class Coverage
     {
-        private string _module;
+        private string _moduleOrAppDirectory;
         private string _identifier;
         private string[] _includeFilters;
         private string[] _includeDirectories;
@@ -54,7 +54,7 @@ namespace Coverlet.Core
             get { return _identifier; }
         }
 
-        public Coverage(string module,
+        public Coverage(string moduleOrDirectory,
             CoverageParameters parameters,
             ILogger logger,
             IInstrumentationHelper instrumentationHelper,
@@ -62,7 +62,7 @@ namespace Coverlet.Core
             ISourceRootTranslator sourceRootTranslator,
             ICecilSymbolHelper cecilSymbolHelper)
         {
-            _module = module;
+            _moduleOrAppDirectory = moduleOrDirectory;
             _includeFilters = parameters.IncludeFilters;
             _includeDirectories = parameters.IncludeDirectories ?? Array.Empty<string>();
             _excludeFilters = parameters.ExcludeFilters;
@@ -91,7 +91,7 @@ namespace Coverlet.Core
                         ISourceRootTranslator sourceRootTranslator)
         {
             _identifier = prepareResult.Identifier;
-            _module = prepareResult.Module;
+            _moduleOrAppDirectory = prepareResult.ModuleOrDirectory;
             _mergeWith = prepareResult.MergeWith;
             _useSourceLink = prepareResult.UseSourceLink;
             _results = new List<InstrumenterResult>(prepareResult.Results);
@@ -103,11 +103,11 @@ namespace Coverlet.Core
 
         public CoveragePrepareResult PrepareModules()
         {
-            string[] modules = _instrumentationHelper.GetCoverableModules(_module, _includeDirectories, _includeTestAssembly);
+            string[] modules = _instrumentationHelper.GetCoverableModules(_moduleOrAppDirectory, _includeDirectories, _includeTestAssembly);
 
             Array.ForEach(_excludeFilters ?? Array.Empty<string>(), filter => _logger.LogVerbose($"Excluded module filter '{filter}'"));
             Array.ForEach(_includeFilters ?? Array.Empty<string>(), filter => _logger.LogVerbose($"Included module filter '{filter}'"));
-            Array.ForEach(_excludedSourceFiles ?? Array.Empty<string>(), filter => _logger.LogVerbose($"Excluded source files filter '{filter}'"));
+            Array.ForEach(_excludedSourceFiles ?? Array.Empty<string>(), filter => _logger.LogVerbose($"Excluded source files filter '{FileSystem.EscapeFileName(filter)}'"));
 
             _excludeFilters = _excludeFilters?.Where(f => _instrumentationHelper.IsValidFilterExpression(f)).ToArray();
             _includeFilters = _includeFilters?.Where(f => _instrumentationHelper.IsValidFilterExpression(f)).ToArray();
@@ -161,7 +161,7 @@ namespace Coverlet.Core
             return new CoveragePrepareResult()
             {
                 Identifier = _identifier,
-                Module = _module,
+                ModuleOrDirectory = _moduleOrAppDirectory,
                 MergeWith = _mergeWith,
                 UseSourceLink = _useSourceLink,
                 Results = _results.ToArray()
@@ -392,7 +392,33 @@ namespace Coverlet.Core
                     }
                 }
 
-                List<(int docIndex, int line)> zeroHitsLines = new List<(int docIndex, int line)>();
+                // Calculate lines to skip for every hits start/end candidate
+                // Nested ranges win on outermost one
+                foreach (HitCandidate hitCandidate in result.HitCandidates)
+                {
+                    if (hitCandidate.isBranch || hitCandidate.end == hitCandidate.start)
+                    {
+                        continue;
+                    }
+
+                    foreach (HitCandidate hitCandidateToCompare in result.HitCandidates)
+                    {
+                        if (hitCandidate != hitCandidateToCompare && !hitCandidateToCompare.isBranch)
+                        {
+                            if (hitCandidateToCompare.start >= hitCandidate.start &&
+                               hitCandidateToCompare.end <= hitCandidate.end)
+                            {
+                                for (int i = hitCandidateToCompare.start;
+                                     i <= (hitCandidateToCompare.end == 0 ? hitCandidateToCompare.start : hitCandidateToCompare.end);
+                                     i++)
+                                {
+                                    (hitCandidate.AccountedByNestedInstrumentation ??= new HashSet<int>()).Add(i);
+                                }
+                            }
+                        }
+                    }
+                }
+
                 var documentsList = result.Documents.Values.ToList();
                 using (var fs = _fileSystem.NewFileStream(result.HitsFilePath, FileMode.Open))
                 using (var br = new BinaryReader(fs))
@@ -416,27 +442,14 @@ namespace Coverlet.Core
                         {
                             for (int j = hitLocation.start; j <= hitLocation.end; j++)
                             {
+                                if (hitLocation.AccountedByNestedInstrumentation?.Contains(j) == true)
+                                {
+                                    continue;
+                                }
+
                                 var line = document.Lines[j];
                                 line.Hits += hits;
-
-                                // We register 0 hit lines for later cleanup false positive of nested lambda closures
-                                if (hits == 0)
-                                {
-                                    zeroHitsLines.Add((hitLocation.docIndex, line.Number));
-                                }
                             }
-                        }
-                    }
-                }
-
-                // Cleanup nested state machine false positive hits
-                foreach (var (docIndex, line) in zeroHitsLines)
-                {
-                    foreach (var lineToCheck in documentsList[docIndex].Lines)
-                    {
-                        if (lineToCheck.Key == line)
-                        {
-                            lineToCheck.Value.Hits = 0;
                         }
                     }
                 }

@@ -60,16 +60,9 @@ To get the list of commits between two version use git command
 
 This is the steps to do to release new packages to Nuget.org
 
-1) Update project versions in file(remove `-preview.{height}` and adjust versions):
+1) Update projects version in file `version.json` in root of repo (remove `-preview.{height}` and adjust version)
 
-Collector 
-https://github.com/tonerdo/coverlet/blob/master/src/coverlet.collector/version.json  
-.NET tool
-https://github.com/tonerdo/coverlet/blob/master/src/coverlet.console/version.json  
-Msbuild tasks
-https://github.com/tonerdo/coverlet/blob/master/src/coverlet.msbuild.tasks/version.json  
-
-Core lib project file https://github.com/tonerdo/coverlet/blob/master/src/coverlet.core/coverlet.core.csproj.
+Update core lib project file version https://github.com/tonerdo/coverlet/blob/master/src/coverlet.core/coverlet.core.csproj.  
 The version of core lib project file is the version we'll report on github repo releases https://github.com/tonerdo/coverlet/releases
 
 Do a PR and merge to master.
@@ -91,10 +84,23 @@ dotnet pack -c release /p:TF_BUILD=true /p:PublicRelease=true
   Successfully created package 'D:\git\coverlet\bin\Release\Packages\coverlet.collector.1.2.1.nupkg'.
   Successfully created package 'D:\git\coverlet\bin\Release\Packages\coverlet.collector.1.2.1.snupkg'.
 ```
+4) Sign the packages using SignClient tool https://www.nuget.org/packages/SignClient
 
-4) Upload *.nupkg files to Nuget.org site. **Check all metadata(url links, deterministic build etc...) before "Submit"**
+```powershell
+❯ SignClient "Sign" `
+>> --baseDirectory "REPO ROOT DIRECTORY\bin" `
+>> --input "**/*.nupkg" `
+>> --config "ROOT REPO DIRECTORY\eng\signclient.json" `
+>> --user "USER" `
+>> --secret "SECRET" `
+>> --name "Coverlet" `
+>> --description "Coverlet" `
+>> --descriptionUrl "https://github.com/coverlet-coverage/coverlet"
+```
 
-5) **On your fork**:
+5) Upload *.nupkg files to Nuget.org site. **Check all metadata(url links, deterministic build etc...) before "Submit"**
+
+6) **On your fork**:
 *   Align to master
 *   Bump version by one(fix part) and re-add `-preview.{height}`
 *   Create release on repo https://github.com/tonerdo/coverlet/releases using https://github.com/tonerdo/coverlet/blob/master/src/coverlet.core/coverlet.core.csproj assembly version

@@ -13,11 +13,13 @@ Coverlet is a cross platform code coverage framework for .NET, with support for 
 # Main contents
 * [QuickStart](#Quick-Start)
 * [How It Works](#How-It-Works)
+* [Drivers features differences](Documentation/DriversFeatures.md)
 * [Deterministic build support](#Deterministic-build-support)
 * [Known Issues](#Known-Issues)
 * [Consume nightly build](#Consume-nightly-build)
 * [Feature samples](Documentation/Examples.md)
 * [Cake Add-In](#Cake-Add-In)
+* [Visual Studio Add-In](#Visual-Studio-Add-In)
 * [Changelog](Documentation/Changelog.md)
 * [Roadmap](Documentation/Roadmap.md)
 
@@ -27,7 +29,7 @@ Coverlet can be used through three different *drivers*
 
 * VSTest engine integration
 * MSBuild task integration
-* As a .NET Global tool  
+* As a .NET Global tool (supports standalone integration tests)
 
 Coverlet supports only SDK-style projects https://docs.microsoft.com/en-us/visualstudio/msbuild/how-to-use-project-sdk?view=vs-2019  
 
@@ -140,6 +142,11 @@ Unfortunately we have some known issues, check it [here](Documentation/KnownIssu
 ## Cake Add-In
 
 If you're using [Cake Build](https://cakebuild.net) for your build script you can use the [Cake.Coverlet](https://github.com/Romanx/Cake.Coverlet) add-in to provide you extensions to dotnet test for passing Coverlet arguments in a strongly typed manner.
+
+## Visual Studio Add-In
+
+If you're using Visual Studio, you can use the [Fine Code Coverage](https://marketplace.visualstudio.com/items?itemName=FortuneNgwenya.FineCodeCoverage) extension to visualize coverlet output inside Visual Studio while you code.
+Visualization is updated when you run unit tests in inside Visual Studio.
 
 ## Consume nightly build
 
