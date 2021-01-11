@@ -4,7 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## Release date 2021-01-09
+### Packages  
+coverlet.msbuild 3.0.0  
+coverlet.console 3.0.0  
+coverlet.collector 3.0.0  
 
 ### Fixed
 -Attribute exclusion does not work if attribute name does not end with "Attribute" [#884](https://github.com/coverlet-coverage/coverlet/pull/884) by https://github.com/bddckr  
@@ -16,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 -Skip autoprops feature [#912](https://github.com/coverlet-coverage/coverlet/pull/912)  
 -Exclude code that follows [DoesNotReturn] from code coverage [#904](https://github.com/coverlet-coverage/coverlet/pull/904) by https://github.com/kevin-montrose  
+-`CoverletReport` MSBuild variable containing coverage filenames [#932](https://github.com/coverlet-coverage/coverlet/pull/932) by https://github.com/0xced  
 -Add Visual Studio Add-In [#954](https://github.com/coverlet-coverage/coverlet/pull/954) by https://github.com/FortuneN  
 -Remove workaround for deterministic build for sdk >= 3.1.100 [#965](https://github.com/coverlet-coverage/coverlet/pull/965)  
 -Allow standalone coverlet usage for integration/end-to-end tests using .NET tool driver [#991](https://github.com/coverlet-coverage/coverlet/pull/991)  
@@ -113,4 +118,3 @@ coverlet.collector 1.1.0
 -Fix property attribute detection [#477](https://github.com/tonerdo/coverlet/pull/477) by https://github.com/amweiss  
 -Fix instrumentation serialization bug [#458](https://github.com/tonerdo/coverlet/pull/458)  
 -Fix culture for cobertura xml report [#464](https://github.com/tonerdo/coverlet/pull/464)
-
