@@ -1,0 +1,56 @@
+name: Action
+on: [workflow_dispatch]
+jobs:
+  Explore-GitHub-Actions:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout refit
+        uses: actions/checkout@v2
+        with:
+          repository: reactiveui/refit
+          path: refit
+      - name: Checkout coverlet
+        uses: actions/checkout@v2
+        with:
+          repository: coverlet-coverage/coverlet
+          path: coverlet    
+      - name: Setup .NET Core SDK 2.1.x
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '2.1.x'
+      - name: Setup .NET Core SDK 3.1.x
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '3.1.x'
+      - name: Setup .NET Core SDK 5.0.x
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '5.0.x'          
+      - name: Generate first refit report
+        working-directory: refit
+        run: | 
+          git fetch --prune --unshallow
+          dotnet build
+          dotnet test --framework net5.0 --no-build --collect:"XPlat Code Coverage"
+      - name: ReportGenerator
+        working-directory: refit
+        uses: danielpalme/ReportGenerator-GitHub-Action@4.8.9
+        with:
+          reports: 'Refit.Tests\TestResults\*\coverage.cobertura.xml' # REQUIRED # The coverage reports that should be parsed (separated by semicolon). Globbing is supported.
+          targetdir: 'coveragereport' # REQUIRED # The directory where the generated report should be saved.
+          reporttypes: 'HtmlInline;Cobertura' # The output formats and scope (separated by semicolon) Values: Badges, Clover, Cobertura, CsvSummary, Html, HtmlChart, HtmlInline, HtmlInline_AzurePipelines, HtmlInline_AzurePipelines_Dark, HtmlSummary, JsonSummary, Latex, LatexSummary, lcov, MHtml, PngChart, SonarQube, TeamCitySummary, TextSummary, Xml, XmlSummary
+          sourcedirs: '' # Optional directories which contain the corresponding source code (separated by semicolon). The source directories are used if coverage report contains classes without path information.
+          historydir: '' # Optional directory for storing persistent coverage information. Can be used in future reports to show coverage evolution.
+          plugins: '' # Optional plugin files for custom reports or custom history storage (separated by semicolon).
+          assemblyfilters: '+*' # Optional list of assemblies that should be included or excluded in the report. Exclusion filters take precedence over inclusion filters. Wildcards are allowed.
+          classfilters: '+*' # Optional list of classes that should be included or excluded in the report. Exclusion filters take precedence over inclusion filters. Wildcards are allowed.
+          filefilters: '+*' # Optional list of files that should be included or excluded in the report. Exclusion filters take precedence over inclusion filters. Wildcards are allowed.
+          verbosity: 'Info' # The verbosity level of the log messages. Values: Verbose, Info, Warning, Error, Off
+          title: '' # Optional title.
+          tag: '${{ github.run_number }}_${{ github.run_id }}' # Optional tag or build version.
+          customSettings: '' # Optional custom settings (separated by semicolon). See: https://github.com/danielpalme/ReportGenerator/wiki/Settings.
+          toolpath: 'reportgeneratortool' # Default directory for installing the dotnet tool.
+      - uses: actions/upload-artifact@v2
+        with:
+          name: my-artifact
+          path: Refit.Tests\TestResults\*\coverage.cobertura.xml
