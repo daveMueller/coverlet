@@ -33,7 +33,7 @@ jobs:
           dotnet build
           dotnet test --framework net5.0 --no-build --collect:"XPlat Code Coverage"
       - name: Pack coverlet master
-        working-directory: coverlet
+        working-directory: coverlet/coverlet
         run: |
           dotnet fetch
           dotnet pack
