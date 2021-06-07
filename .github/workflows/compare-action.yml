@@ -51,9 +51,7 @@ jobs:
           toolpath: 'reportgeneratortool' # Default directory for installing the dotnet tool.
       - name: Pack coverlet master
         working-directory: coverlet
-        run: | 
-          git fetch --prune --unshallow
-          dotnet pack
+        run: dotnet pack
       - name: Generate second refit report
         working-directory: refit
         run: | 
