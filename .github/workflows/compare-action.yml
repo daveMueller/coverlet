@@ -4,11 +4,11 @@ jobs:
   Explore-GitHub-Actions:
     runs-on: windows-latest
     steps:
-      - name: Checkout refit
-        uses: actions/checkout@v2
-        with:
-          repository: reactiveui/refit
-          path: refit
+#      - name: Checkout refit
+#        uses: actions/checkout@v2
+#        with:
+#          repository: reactiveui/refit
+#          path: refit
       - name: Checkout coverlet
         uses: actions/checkout@v2   
       - name: Setup .NET Core SDK 2.1.x
@@ -34,7 +34,7 @@ jobs:
           dotnet fetch
           dotnet pack
       - name: Generate second refit report
-        working-directory: refit
+        #working-directory: refit
         run: | 
           dotnet add package coverlet.collector --package-directory ../coverlet/bin/Debug/Packages
           dotnet clean
