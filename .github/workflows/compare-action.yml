@@ -10,10 +10,7 @@ jobs:
           repository: reactiveui/refit
           path: refit
       - name: Checkout coverlet
-        uses: actions/checkout@v2
-        with:
-          repository: coverlet-coverage/coverlet
-          path: coverlet    
+        uses: actions/checkout@v2   
       - name: Setup .NET Core SDK 2.1.x
         uses: actions/setup-dotnet@v1
         with:
@@ -33,7 +30,6 @@ jobs:
 #          dotnet build
 #          dotnet test --framework net5.0 --no-build --collect:"XPlat Code Coverage"
       - name: Pack coverlet master
-        working-directory: coverlet
         run: |
           dotnet fetch
           dotnet pack
