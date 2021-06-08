@@ -24,7 +24,7 @@ jobs:
       - name: Setup .NET Core SDK 5.0.x
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: '5.0.101'
+          dotnet-version: '5.0.x'
           include-prerelease: true  
       - name: Generate first refit report
         working-directory: refit
