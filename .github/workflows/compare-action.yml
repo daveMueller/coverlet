@@ -32,15 +32,22 @@ jobs:
           git fetch --prune --unshallow
           dotnet build
           dotnet test --framework net5.0 --no-build --collect:"XPlat Code Coverage"
+      - name: ReportGenerator
+        uses: danielpalme/ReportGenerator-GitHub-Action@4.8.9
+        with:
+          reports: 'Refit.Tests\TestResults\*\coverage.cobertura.xml' # REQUIRED # The coverage reports that should be parsed (separated by semicolon). Globbing is supported.
+          targetdir: 'coveragereport' # REQUIRED # The directory where the generated report should be saved.
+          reporttypes: 'HtmlInline;Cobertura' # The output formats and scope (separated by semicolon) Values: Badges, Clover, Cobertura, CsvSummary, Html, HtmlChart, HtmlInline, HtmlInline_AzurePipelines, HtmlInline_AzurePipelines_Dark, HtmlSummary, JsonSummary, Latex, LatexSummary, lcov, MHtml, PngChart, SonarQube, TeamCitySummary, TextSummary, Xml, XmlSummary
+          toolpath: 'reportgeneratortool' # Default directory for installing the dotnet tool.          
       - name: Pack coverlet master
         working-directory: coverlet
         run: |
           git fetch --prune --unshallow
-          dotnet pack
+          dotnet pack -c Release
       - name: Generate second refit report
         working-directory: refit
         run: | 
-          dotnet add package coverlet.collector --package-directory ../coverlet/bin/Debug/Packages
+          dotnet add package coverlet.collector --package-directory ../coverlet/bin/Release/Packages
           dotnet clean
           dotnet build
           dotnet test --framework net5.0 --no-build --collect:"XPlat Code Coverage"
