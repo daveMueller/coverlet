@@ -33,6 +33,7 @@ jobs:
           dotnet build
           dotnet test --framework net5.0 --no-build --collect:"XPlat Code Coverage"
       - name: ReportGenerator
+        working-directory: refit
         uses: danielpalme/ReportGenerator-GitHub-Action@4.8.9
         with:
           reports: 'Refit.Tests\TestResults\*\coverage.cobertura.xml' # REQUIRED # The coverage reports that should be parsed (separated by semicolon). Globbing is supported.
