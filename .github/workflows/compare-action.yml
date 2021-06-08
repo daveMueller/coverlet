@@ -47,7 +47,7 @@ jobs:
       - name: Generate second refit report
         working-directory: refit
         run: | 
-          rmdir Refit.Tests\TestResults
+          Remove-Item 'Refit.Tests\TestResults' -Recurse
           dotnet add package coverlet.collector --package-directory ../coverlet/bin/Release/Packages
           dotnet clean
           dotnet build
