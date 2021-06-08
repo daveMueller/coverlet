@@ -36,10 +36,11 @@ jobs:
         uses: danielpalme/ReportGenerator-GitHub-Action@4.8.9
         with:
           reports: 'refit\Refit.Tests\TestResults\*\coverage.cobertura.xml'
-          targetdir: 'coveragereport\old'
+          targetdir: 'coveragereport'
           reporttypes: 'TextSummary'
-          title: oldSum
-          toolpath: 'reportgeneratortool'  
+          toolpath: 'reportgeneratortool'
+      - name: Rename first summary
+        run: Rename-Item coveragereport\Summary.txt old.txt
       - name: Pack coverlet master
         working-directory: coverlet
         run: |
@@ -57,11 +58,13 @@ jobs:
         uses: danielpalme/ReportGenerator-GitHub-Action@4.8.9
         with:
           reports: 'refit\Refit.Tests\TestResults\*\coverage.cobertura.xml'
-          targetdir: 'coveragereport\master'
-          title: master
+          targetdir: 'coveragereport'
           reporttypes: 'TextSummary'
-          toolpath: 'reportgeneratortool'          
+          toolpath: 'reportgeneratortool'
+      - name: Rename second summary
+        run: Rename-Item coveragereport\Summary.txt master.txt               
       - uses: actions/upload-artifact@v2
         with:
           name: artifacts
-          path: coveragereport
+          path: |
+            coveragereport/*.txt
