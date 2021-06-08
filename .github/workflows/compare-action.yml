@@ -32,7 +32,7 @@ jobs:
 #          dotnet test --framework net5.0 --no-build --collect:"XPlat Code Coverage"
       - name: Pack coverlet master
         run: |
-          dotnet fetch
+          git fetch --prune --unshallow
           dotnet pack
       - name: Generate second refit report
         #working-directory: refit
