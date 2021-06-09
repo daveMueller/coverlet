@@ -54,6 +54,7 @@ jobs:
         run: | 
           Remove-Item 'Refit.Tests\TestResults' -Recurse
           dotnet nuget add source ../coverlet/bin/Release/Packages
+          dotnet add Refit.Tests package coverlet.collector --prerelease
           dotnet clean
           dotnet restore
           dotnet build
