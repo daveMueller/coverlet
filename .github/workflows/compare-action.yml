@@ -15,7 +15,7 @@ jobs:
           path: coverlet
       - name: Powershell test
         working-directory: refit
-        run: dir
+        run: Get-Childitem -Include *coverlet* -Recurse
       - name: Setup .NET Core SDK 2.1.x
         uses: actions/setup-dotnet@v1
         with:
