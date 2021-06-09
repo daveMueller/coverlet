@@ -49,11 +49,12 @@ jobs:
         run: |
           git fetch --prune --unshallow
           dotnet pack -c Release
+          dotnet nuget add source ${{env.working-directory}}/bin/Release/Packages
       - name: Generate second refit report
         working-directory: refit
         run: | 
           Remove-Item 'Refit.Tests\TestResults' -Recurse
-          dotnet nuget add source ../coverlet/bin/Release/Packages
+          dotnet nuget locals all --clear
           dotnet remove Refit.Tests package coverlet.collector
           dotnet add Refit.Tests package coverlet.collector -v 3.0.4*
           dotnet clean
