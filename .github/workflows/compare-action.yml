@@ -34,7 +34,6 @@ jobs:
           dotnet test --framework net5.0 --no-build --collect:"XPlat Code Coverage"
           Get-Childitem -Include *coverlet* -Recurse
           $coverletVersion = (Get-Childitem -Include *coverlet* -Recurse)
-          echo Hallo $coverletVersion
           echo "FirstVersion=$coverletVersion" >> $GITHUB_ENV
       - name: ReportGenerator
         uses: danielpalme/ReportGenerator-GitHub-Action@4.8.9
@@ -58,6 +57,7 @@ jobs:
           dotnet clean
           dotnet build
           dotnet test --framework net5.0 --no-build --collect:"XPlat Code Coverage"
+          Get-Childitem -Include *coverlet* -Recurse
       - name: ReportGenerator
         uses: danielpalme/ReportGenerator-GitHub-Action@4.8.9
         with:
