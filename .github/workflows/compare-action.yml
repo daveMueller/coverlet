@@ -49,6 +49,7 @@ jobs:
         run: |
           git fetch --prune --unshallow
           dotnet pack -c Release
+          dotnet nuget add source $GITHUB_WORKSPACE
           dotnet nuget list source
       - name: Generate second refit report
         working-directory: refit
