@@ -3,7 +3,7 @@ on: [push]
 jobs:
   Explore-GitHub-Actions:
     runs-on: windows-latest
-    steps:
+    steps:     
       - name: Checkout refit
         uses: actions/checkout@v2
         with:
@@ -12,7 +12,10 @@ jobs:
       - name: Checkout coverlet
         uses: actions/checkout@v2
         with:
-          path: coverlet  
+          path: coverlet
+      - name: Powershell test
+        working-directory: refit
+        run: echo (Get-Childitem -Include *coverlet* -Recurse)
       - name: Setup .NET Core SDK 2.1.x
         uses: actions/setup-dotnet@v1
         with:
@@ -32,7 +35,7 @@ jobs:
           git fetch --prune --unshallow
           dotnet build
           dotnet test --framework net5.0 --no-build --collect:"XPlat Code Coverage"
-          $coverletVersion = (Get-Childitem -Include *coverlet.collector.dll* -Recurse).VersionInfo.ProductVersion
+          $coverletVersion = (Get-Childitem -Include *coverlet* -Recurse)
           echo Hallo $coverletVersion
           echo "FirstVersion=$coverletVersion" >> $GITHUB_ENV
       - name: ReportGenerator
