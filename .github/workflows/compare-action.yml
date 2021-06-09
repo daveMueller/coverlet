@@ -13,9 +13,6 @@ jobs:
         uses: actions/checkout@v2
         with:
           path: coverlet
-      - name: Powershell test
-        working-directory: refit
-        run: Get-Childitem -Include *coverlet* -Recurse
       - name: Setup .NET Core SDK 2.1.x
         uses: actions/setup-dotnet@v1
         with:
@@ -35,6 +32,7 @@ jobs:
           git fetch --prune --unshallow
           dotnet build
           dotnet test --framework net5.0 --no-build --collect:"XPlat Code Coverage"
+          Get-Childitem -Include *coverlet* -Recurse
           $coverletVersion = (Get-Childitem -Include *coverlet* -Recurse)
           echo Hallo $coverletVersion
           echo "FirstVersion=$coverletVersion" >> $GITHUB_ENV
