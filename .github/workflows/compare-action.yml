@@ -70,9 +70,8 @@ jobs:
           reporttypes: 'TextSummary'
           toolpath: 'reportgeneratortool'
       - name: Rename second summary
-        working-directory: refit\Refit.Tests
         run: |
-          $version = (([xml](Get-Content *csproj)).project.ItemGroup.PackageReference | Where-Object {$_.Include -like "coverlet.collector"}).Version
+          $version = (([xml](Get-Content refit\Refit.Tests\*csproj)).project.ItemGroup.PackageReference | Where-Object {$_.Include -like "coverlet.collector"}).Version
           echo $version
           Rename-Item coveragereport\Summary.txt "{$version}.txt"
       - uses: actions/upload-artifact@v2
