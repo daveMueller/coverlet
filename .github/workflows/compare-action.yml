@@ -57,7 +57,7 @@ jobs:
           dotnet clean
           dotnet build
           dotnet test --framework net5.0 --no-build --collect:"XPlat Code Coverage"
-          Get-Childitem -Include *coverlet* -Recurse
+          Get-Content Refit.Tests\*csproj
       - name: ReportGenerator
         uses: danielpalme/ReportGenerator-GitHub-Action@4.8.9
         with:
