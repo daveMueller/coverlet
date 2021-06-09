@@ -32,6 +32,8 @@ jobs:
           git fetch --prune --unshallow
           dotnet build
           dotnet test --framework net5.0 --no-build --collect:"XPlat Code Coverage"
+          $coverletVersion = (Get-Childitem -Include *coverlet.collector.dll* -Recurse).VersionInfo.ProductVersion
+          echo "FirstVersion=$coverletVersion" >> $GITHUB_ENV
       - name: ReportGenerator
         uses: danielpalme/ReportGenerator-GitHub-Action@4.8.9
         with:
@@ -40,7 +42,7 @@ jobs:
           reporttypes: 'TextSummary'
           toolpath: 'reportgeneratortool'
       - name: Rename first summary
-        run: Rename-Item coveragereport\Summary.txt old.txt
+        run: Rename-Item coveragereport\Summary.txt ${{env.FirstVersion}}.txt
       - name: Pack coverlet master
         working-directory: coverlet
         run: |
@@ -66,5 +68,4 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: artifacts
-          path: |
-            coveragereport/*.txt
+          path: coveragereport/*.txt
