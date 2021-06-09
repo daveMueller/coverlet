@@ -49,7 +49,7 @@ jobs:
         run: |
           git fetch --prune --unshallow
           dotnet pack -c Release
-          dotnet nuget add source ${{env.working-directory}}/bin/Release/Packages
+          dotnet nuget add source ${{env.working-directory}}
       - name: Generate second refit report
         working-directory: refit
         run: | 
