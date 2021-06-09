@@ -33,6 +33,7 @@ jobs:
           dotnet build
           dotnet test --framework net5.0 --no-build --collect:"XPlat Code Coverage"
           $coverletVersion = (Get-Childitem -Include *coverlet.collector.dll* -Recurse).VersionInfo.ProductVersion
+          Write-Host $coverletVersion
           echo "FirstVersion=$coverletVersion" >> $GITHUB_ENV
       - name: ReportGenerator
         uses: danielpalme/ReportGenerator-GitHub-Action@4.8.9
