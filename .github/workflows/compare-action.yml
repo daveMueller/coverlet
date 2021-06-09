@@ -53,7 +53,7 @@ jobs:
         working-directory: refit
         run: | 
           Remove-Item 'Refit.Tests\TestResults' -Recurse
-          dotnet add package coverlet.collector --package-directory ../coverlet/bin/Release/Packages
+          dotnet add Refit.Tests package coverlet.collector --package-directory ../coverlet/bin/Release/Packages
           dotnet clean
           dotnet build
           dotnet test --framework net5.0 --no-build --collect:"XPlat Code Coverage"
