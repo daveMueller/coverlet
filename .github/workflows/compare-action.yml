@@ -30,6 +30,8 @@ jobs:
           include-prerelease: true
 
   First-report:
+      runs-on: windows-latest
+      steps:     
       - name: Generate first refit report
         working-directory: refit
         run: | 
@@ -51,6 +53,8 @@ jobs:
           Rename-Item coveragereport\Summary.txt "$version.txt"
 
   Second-report:
+      runs-on: windows-latest
+      steps:  
       - name: Pack coverlet master
         working-directory: coverlet
         run: |
