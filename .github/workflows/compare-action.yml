@@ -11,10 +11,6 @@ jobs:
           path: refit
       - name: Checkout coverlet
         uses: actions/checkout@v2
-        with:
-          path: coverlet
-      - name: Test
-        run : echo $PSScriptRoot
       - name: Setup .NET Core SDK 2.1.x
         uses: actions/setup-dotnet@v1
         with:
@@ -50,7 +46,6 @@ jobs:
           Rename-Item coveragereport\Summary.txt "$version.txt"
 
       - name: Pack coverlet master
-        working-directory: coverlet
         run: |
           git fetch --prune --unshallow
           dotnet pack -c Release
