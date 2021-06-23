@@ -48,7 +48,7 @@ jobs:
 
       - name: Pack coverlet master
         run: |
-          echo dir
+          dir
           git fetch --prune --unshallow
           dotnet pack -c Release
           dotnet nuget add source $PSScriptRoot\..\coverlet\coverlet\bin\Release\Packages
