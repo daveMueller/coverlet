@@ -51,7 +51,8 @@ jobs:
           dir
           git fetch --prune --unshallow
           dotnet pack -c Release
-          dotnet nuget add source $PSScriptRoot\..\coverlet\coverlet\bin\Release\Packages
+          dotnet nuget add source $PSScriptRoot\bin\Release\Packages
+          dir
       - name: Generate second refit report
         working-directory: refit
         run: | 
