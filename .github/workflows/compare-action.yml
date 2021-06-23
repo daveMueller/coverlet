@@ -50,7 +50,7 @@ jobs:
         run: |
           git fetch --prune --unshallow
           dotnet pack -c Release
-          dotnet nuget add source $PSScriptRoot\..\coverlet\coverlet\coverlet\bin\Release\Packages
+          dotnet nuget add source $PSScriptRoot\..\coverlet\coverlet\bin\Release\Packages
       - name: Generate second refit report
         working-directory: refit
         run: | 
