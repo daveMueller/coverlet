@@ -6,6 +6,8 @@ jobs:
     steps:     
       - name: Checkout coverlet
         uses: actions/checkout@v2
+        with:
+          path: coverlet
       - name: Checkout refit
         uses: actions/checkout@v2
         with:
@@ -47,6 +49,7 @@ jobs:
           Rename-Item coveragereport\Summary.txt "$version.txt"
 
       - name: Pack coverlet master
+        working-directory: coverlet
         run: |
           dir
           git fetch --prune --unshallow
