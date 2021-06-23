@@ -51,12 +51,9 @@ jobs:
       - name: Pack coverlet master
         working-directory: coverlet
         run: |
-          $PSScriptRoot
-          dir
           git fetch --prune --unshallow
           dotnet pack -c Release
-          dotnet nuget add source $PSScriptRoot\bin\Release\Packages
-          dir
+          dotnet nuget add source $PSScriptRoot\..\coverlet\coverlet\coverlet\bin\Release\Packages
       - name: Generate second refit report
         working-directory: refit
         run: | 
