@@ -1,7 +1,7 @@
 name: Benchmark Test
 on: [workflow_dispatch]
 jobs:
-  Setup-job:
+  Benchmark-Test:
     runs-on: windows-latest
     steps:     
       - name: Checkout coverlet
