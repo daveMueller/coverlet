@@ -1,4 +1,4 @@
-name: Action
+name: Benchmark Test
 on: [workflow_dispatch]
 jobs:
   Setup-job:
