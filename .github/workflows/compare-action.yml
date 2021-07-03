@@ -1,5 +1,5 @@
 name: Action
-on: [push]
+on: [workflow_dispatch]
 jobs:
   Setup-job:
     runs-on: windows-latest
