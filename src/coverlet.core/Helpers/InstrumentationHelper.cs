@@ -419,8 +419,12 @@ namespace Coverlet.Core.Helpers
       return IsTypeFilterMatch(module, type, includeFilters);
     }
 
+    private static readonly Regex _localMethodRegex = new Regex(WildcardToRegex("<*>*__*|*"), s_regexOptions, TimeSpan.FromSeconds(10));
+
     public bool IsLocalMethod(string method)
-        => new Regex(WildcardToRegex("<*>*__*|*"), s_regexOptions, TimeSpan.FromSeconds(10)).IsMatch(method);
+      => _localMethodRegex.IsMatch(method);
+
+    //public bool IsLocalMethod(string method) => new Regex(WildcardToRegex("<*>*__*|*"), s_regexOptions, TimeSpan.FromSeconds(10)).IsMatch(method);
 
     public void SetLogger(ILogger logger)
     {
