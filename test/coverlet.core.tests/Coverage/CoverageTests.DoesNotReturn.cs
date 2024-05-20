@@ -238,6 +238,35 @@ namespace Coverlet.Core.Tests
     }
 
     [Fact]
+    public void CallsCustomExceptionThrow_DoesNotReturnAttribute_InstrumentsCorrect()
+    {
+      string path = Path.GetTempFileName();
+      try
+      {
+        FunctionExecutor.RunInProcess(async (string[] pathSerialize) =>
+        {
+          CoveragePrepareResult coveragePrepareResult = await TestInstrumentationHelper.Run<DoesNotReturn>(instance =>
+          {
+            try { instance.CallCustomExceptionThrow(1); }
+            catch (Exception) { }
+            return Task.CompletedTask;
+
+          }, persistPrepareResultToFile: pathSerialize[0], doesNotReturnAttributes: _ => new string[] { "DoesNotReturnAttribute" });
+
+          return 0;
+
+        }, new string[] { path });
+
+        CoverageResult result = TestInstrumentationHelper.GetCoverageResult(path);
+        result.GenerateReport(show: true);
+      }
+      finally
+      {
+        File.Delete(path);
+      }
+    }
+
+    [Fact]
     public void WithLeave_DoesNotReturnAttribute_InstrumentsCorrect()
     {
       string path = Path.GetTempFileName();
