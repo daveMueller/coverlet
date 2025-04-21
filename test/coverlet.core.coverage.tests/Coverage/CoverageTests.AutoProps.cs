@@ -69,7 +69,7 @@ namespace Coverlet.CoreCoverage.Tests
       string path = Path.GetTempFileName();
       try
       {
-        FunctionExecutor.Run(async (string[] parameters) =>
+        FunctionExecutor.RunInProcess(async (string[] parameters) =>
         {
           CoveragePrepareResult coveragePrepareResult = await TestInstrumentationHelper.Run<RecordWithPropertyInit>(instance =>
                       {
@@ -87,6 +87,7 @@ namespace Coverlet.CoreCoverage.Tests
         if (skipAutoProps)
         {
           TestInstrumentationHelper.GetCoverageResult(path)
+            .GenerateReport(show:true)
               .Document("Instrumentation.AutoProps.cs")
               .AssertNonInstrumentedLines(BuildConfiguration.Debug, 23, 24)
               .AssertNonInstrumentedLines(BuildConfiguration.Release, 23, 24)
@@ -96,6 +97,7 @@ namespace Coverlet.CoreCoverage.Tests
         else
         {
           TestInstrumentationHelper.GetCoverageResult(path)
+            .GenerateReport(show: true)
               .Document("Instrumentation.AutoProps.cs")
               .AssertLinesCoveredFromTo(BuildConfiguration.Debug, 18, 24)
               .AssertLinesCoveredFromTo(BuildConfiguration.Release, 21, 21)

@@ -592,8 +592,8 @@ namespace Coverlet.Core.Instrumentation
 
         if (sequencePoint != null && !sequencePoint.IsHidden)
         {
-          if (_cecilSymbolHelper.SkipInlineAssignedAutoProperty(_parameters.SkipAutoProps, method,
-                currentInstruction) || IsInsideExcludedMethodSection(sequencePoint))
+          if (/*_cecilSymbolHelper.SkipInlineAssignedAutoProperty(_parameters.SkipAutoProps, method,
+                currentInstruction) ||*/ IsInsideExcludedMethodSection(sequencePoint))
           {
             index++;
             continue;
