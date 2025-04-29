@@ -13,38 +13,38 @@ namespace Coverlet.Core.CoverageSamples.Tests
     public int AutoPropsInit { get; set; } = 10;
   }
 
-  public record RecordWithPropertyInit
-  {
-    private int _myRecordVal = 0;
-    public RecordWithPropertyInit()
-    {
-      _myRecordVal = new Random().Next();
-    }
-    public string RecordAutoPropsNonInit { get; set; }
-    public string RecordAutoPropsInit { get; set; } = string.Empty;
-  }
+  //public record RecordWithPropertyInit
+  //{
+  //  private int _myRecordVal = 0;
+  //  public RecordWithPropertyInit()
+  //  {
+  //    _myRecordVal = new Random().Next();
+  //  }
+  //  public string RecordAutoPropsNonInit { get; set; }
+  //  public string RecordAutoPropsInit { get; set; } = string.Empty;
+  //}
 
-  public class ClassWithRecordsAutoProperties
-  {
-    record RecordWithPrimaryConstructor(string Prop1, string Prop2);
+  //public class ClassWithRecordsAutoProperties
+  //{
+  //  record RecordWithPrimaryConstructor(string Prop1, string Prop2);
 
-    public ClassWithRecordsAutoProperties()
-    {
-      var record = new RecordWithPrimaryConstructor(string.Empty, string.Empty);
-    }
-  }
+  //  public ClassWithRecordsAutoProperties()
+  //  {
+  //    var record = new RecordWithPrimaryConstructor(string.Empty, string.Empty);
+  //  }
+  //}
 
-  public class ClassWithInheritingRecordsAndAutoProperties
-  {
-    record BaseRecord(int A);
+  //public class ClassWithInheritingRecordsAndAutoProperties
+  //{
+  //  record BaseRecord(int A);
 
-    record InheritedRecord(int A) : BaseRecord(A);
+  //  record InheritedRecord(int A) : BaseRecord(A);
 
-    public ClassWithInheritingRecordsAndAutoProperties()
-    {
-      var record = new InheritedRecord(1);
-    }
-  }
+  //  public ClassWithInheritingRecordsAndAutoProperties()
+  //  {
+  //    var record = new InheritedRecord(1);
+  //  }
+  //}
 
 
 }

@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Coverlet.Core.CoverageSamples.Tests
 {
@@ -54,14 +50,14 @@ namespace Coverlet.Core.CoverageSamples.Tests
 
     public class ClassWithAbstractRecords
     {
-        public abstract record AuditData()
+        public abstract record FirstAuditData()
         {
             public abstract string GetAuditType();
         }
 
-        public abstract record AuditData
+        public abstract record SecondAuditData
         {
-            private protected AuditData()
+            private protected SecondAuditData()
             {
 
             }
