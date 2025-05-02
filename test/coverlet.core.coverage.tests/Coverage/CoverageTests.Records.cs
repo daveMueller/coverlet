@@ -150,5 +150,95 @@ namespace Coverlet.CoreCoverage.Tests
         File.Delete(path);
       }
     }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void SkipInheritingRecordsWithPropertiesABC(bool skipAutoProps)
+    {
+      string path = Path.GetTempFileName();
+      try
+      {
+        FunctionExecutor.RunInProcess(async (string[] parameters) =>
+        {
+          CoveragePrepareResult coveragePrepareResult = await TestInstrumentationHelper.Run<ClassWithRecordsEmptyPrimaryConstructor>(instance =>
+            {
+              return Task.CompletedTask;
+            },
+            persistPrepareResultToFile: parameters[0], skipAutoProps: bool.Parse(parameters[1]));
+
+          return 0;
+        }, [path, skipAutoProps.ToString()]);
+
+        if (skipAutoProps)
+        {
+          TestInstrumentationHelper.GetCoverageResult(path)
+            .GenerateReport(show: true)
+            .Document("Instrumentation.Records.cs")
+            .AssertNonInstrumentedLines(BuildConfiguration.Debug, 39, 39)
+            .AssertNonInstrumentedLines(BuildConfiguration.Release, 39, 39)
+            .AssertLinesCovered(BuildConfiguration.Debug, (41, 1), (44, 1), (45, 1), (46, 1))
+            .AssertLinesCovered(BuildConfiguration.Release, (45, 1));
+
+        }
+        else
+        {
+          TestInstrumentationHelper.GetCoverageResult(path)
+            .GenerateReport(show: true)
+            .Document("Instrumentation.Records.cs")
+            .AssertLinesCovered(BuildConfiguration.Debug, (39, 1), (41, 1), (44, 1), (45, 1), (46, 1))
+            .AssertLinesCovered(BuildConfiguration.Release, (39, 1), (41, 1), (45, 1));
+        }
+      }
+      finally
+      {
+        File.Delete(path);
+      }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void SkipInheritingRecordsWithPropertiesABCDEF(bool skipAutoProps)
+    {
+      string path = Path.GetTempFileName();
+      try
+      {
+        FunctionExecutor.RunInProcess(async (string[] parameters) =>
+        {
+          CoveragePrepareResult coveragePrepareResult = await TestInstrumentationHelper.Run<ClassWithAbstractRecords>(instance =>
+            {
+              return Task.CompletedTask;
+            },
+            persistPrepareResultToFile: parameters[0], skipAutoProps: bool.Parse(parameters[1]));
+
+          return 0;
+        }, [path, skipAutoProps.ToString()]);
+
+        if (skipAutoProps)
+        {
+          TestInstrumentationHelper.GetCoverageResult(path)
+            .GenerateReport(show: true)
+            .Document("Instrumentation.Records.cs")
+            .AssertNonInstrumentedLines(BuildConfiguration.Debug, 39, 39)
+            .AssertNonInstrumentedLines(BuildConfiguration.Release, 39, 39)
+            .AssertLinesCovered(BuildConfiguration.Debug, (41, 1), (44, 1), (45, 1), (46, 1))
+            .AssertLinesCovered(BuildConfiguration.Release, (45, 1));
+
+        }
+        else
+        {
+          TestInstrumentationHelper.GetCoverageResult(path)
+            .GenerateReport(show: true)
+            .Document("Instrumentation.Records.cs")
+            .AssertLinesCovered(BuildConfiguration.Debug, (39, 1), (41, 1), (44, 1), (45, 1), (46, 1))
+            .AssertLinesCovered(BuildConfiguration.Release, (39, 1), (41, 1), (45, 1));
+        }
+      }
+      finally
+      {
+        File.Delete(path);
+      }
+    }
   }
 }
