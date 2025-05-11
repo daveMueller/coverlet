@@ -37,14 +37,20 @@ namespace Coverlet.Core.CoverageSamples.Tests
 
     public class ClassWithRecordsEmptyPrimaryConstructor
 	{
-        internal record First
+        record First
         {
             public string Bar() => "baz";
         }
 
-        internal record Second()
+        record Second()
         {
             public string Bar() => "baz";
+        }
+
+        public ClassWithRecordsEmptyPrimaryConstructor()
+        {
+            new First().Bar();
+            new Second().Bar();
         }
 	}
 
