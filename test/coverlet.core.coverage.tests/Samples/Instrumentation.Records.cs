@@ -70,5 +70,27 @@ namespace Coverlet.Core.CoverageSamples.Tests
 
             public abstract string GetAuditType();
         }
+
+        public record ConcreteFirstAuditData : FirstAuditData
+        {
+            public override string GetAuditType()
+            {
+                return string.Empty;
+            }
+        }
+
+        public record ConcreteSecondAuditData : SecondAuditData
+        {
+            public override string GetAuditType()
+            {
+                return string.Empty;
+            }
+        }
+
+        public ClassWithAbstractRecords()
+        {
+            new ConcreteFirstAuditData().GetAuditType();
+            new ConcreteSecondAuditData().GetAuditType();
+        }
 	}
 }
