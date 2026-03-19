@@ -31,4 +31,17 @@ namespace Coverlet.Core.CoverageSamples.Tests
       }
     }
   }
+
+  public class Issue1836
+  {
+    public async IAsyncEnumerable<int> GetNumbersAsync([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+      int[] items = [1, 2];
+      foreach (var item in items)
+      {
+        await Task.CompletedTask;
+        yield return !cancellationToken.IsCancellationRequested ? item : throw new OperationCanceledException();
+      }
+    }
+  }
 }
