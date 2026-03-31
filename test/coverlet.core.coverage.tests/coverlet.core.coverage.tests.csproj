@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$(RepoRoot)src\coverlet.msbuild.tasks\buildMultiTargeting\coverlet.msbuild.props" />
 
   <PropertyGroup>
@@ -25,7 +25,7 @@
     <PackageReference Include="Microsoft.Testing.Platform" VersionOverride="1.9.1" />
     <PackageReference Include="Microsoft.Testing.Extensions.TrxReport.Abstractions" VersionOverride="1.9.1" />
     <PackageReference Include="xunit.v3" VersionOverride="2.0.0"/>
-    <PackageReference Include="xunit.runner.visualstudio">
+    <PackageReference Include="xunit.runner.visualstudio" VersionOverride="2.8.2">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
