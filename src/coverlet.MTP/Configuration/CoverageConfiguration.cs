@@ -12,13 +12,17 @@ internal sealed class CoverageConfiguration
   private readonly ICommandLineOptions _commandLineOptions;
   private readonly ILogger? _logger;
 
-  // Default exclusions matching coverlet.collector behavior
-  // See: https://github.com/coverlet-coverage/coverlet/blob/master/Documentation/VSTestIntegration.md
+  // Default exclusions for user convenience, to avoid common noise in coverage reports. These are merged with any user-specified exclusions.
   private static readonly string[] s_defaultExcludeFilters =
   [
+    "[coverlet.*]*",
     "[xunit.*]*",
+    "[NUnit3.*]*",
+    "[nunit.*]*",
     "[Microsoft.Testing.*]*",
-    "[coverlet.*]*"
+    "[Microsoft.Testplatform.*]*",
+    "[Microsoft.VisualStudio.TestPlatform.*]*"
+
   ];
 
   private static readonly string[] s_defaultExcludeByAttributes =
@@ -155,6 +159,30 @@ internal sealed class CoverageConfiguration
     }
 
     return [];
+  }
+
+  /// <summary>
+  /// Gets the file prefix for coverage report filenames.
+  /// Returns null if the prefix is empty or whitespace.
+  /// </summary>
+  public string? GetFilePrefix()
+  {
+    if (_commandLineOptions.TryGetOptionArgumentList(
+      CoverletOptionNames.FilePrefix,
+      out string[]? prefix) && prefix.Length > 0)
+    {
+      string? rawPrefix = prefix[0];
+      string? trimmedPrefix = rawPrefix?.Trim();
+      if (string.IsNullOrWhiteSpace(trimmedPrefix))
+      {
+        return null;
+      }
+
+      LogOptionValue(CoverletOptionNames.FilePrefix, [trimmedPrefix!], isExplicit: true);
+      return trimmedPrefix;
+    }
+
+    return null;
   }
 
   /// <summary>
