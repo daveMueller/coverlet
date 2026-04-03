@@ -10,7 +10,6 @@ using Coverlet.Core;
 using Coverlet.Core.CoverageSamples.Tests;
 using Coverlet.Core.Tests;
 using Coverlet.Tests.Utils;
-using Tmds.Utils;
 using Xunit;
 
 namespace Coverlet.CoreCoverage.Tests
@@ -55,6 +54,14 @@ namespace Coverlet.CoreCoverage.Tests
       }
     }
 
+    /// <summary>
+    /// Test for Issue #1836: Wrong branch rate on IAsyncEnumerable with [EnumeratorCancellation]
+    /// From PR https://github.com/daveMueller/coverlet/pull/31
+    ///
+    /// Key finding: The foreach branches on line 40 are reported at ordinals 2 and 3 (not 0 and 1),
+    /// because the compiler-generated state machine for [EnumeratorCancellation] token-combining
+    /// logic consumes ordinals 0 and 1.
+    /// </summary>
     [Fact]
     public void AsyncIterator_Issue1836()
     {
@@ -69,7 +76,7 @@ namespace Coverlet.CoreCoverage.Tests
                     await foreach (int item in (IAsyncEnumerable<int>)instance.GetNumbersAsync()) { }
 
                     // Cancelled iteration covering the throw branch of the ternary
-                    var cts = new CancellationTokenSource();
+                    using var cts = new CancellationTokenSource();
                     cts.Cancel();
                     try
                     {
@@ -81,12 +88,17 @@ namespace Coverlet.CoreCoverage.Tests
         }, [path]);
 
         Core.Instrumentation.Document document = TestInstrumentationHelper.GetCoverageResult(path).Document("Instrumentation.AsyncIterator.cs");
-        document.AssertLinesCoveredFromTo(BuildConfiguration.Debug, 39, 43);
+        // Lines adjusted for the Issue1836 class location:
+        // Line 43: int[] items = [1, 2]
+        // Line 44: foreach (var item in items)
+        // Line 46: await Task.CompletedTask
+        // Line 47: yield return ternary expression
+        document.AssertLinesCoveredFromTo(BuildConfiguration.Debug, 43, 47);
         document.AssertBranchesCovered(BuildConfiguration.Debug,
                                        // foreach loop branches (ordinals start at 2 due to [EnumeratorCancellation] state machine code)
-                                       (40, 2, 1), (40, 3, 3),
+                                       (44, 2, 1), (44, 3, 3),
                                        // ternary conditional branches: false=throw (cancelled), true=return item (normal)
-                                       (43, 0, 1), (43, 1, 2));
+                                       (47, 0, 1), (47, 1, 2));
         document.ExpectedTotalNumberOfBranches(BuildConfiguration.Debug, 2);
       }
       finally

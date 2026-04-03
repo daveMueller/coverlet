@@ -32,7 +32,7 @@ jobs:
       checks: write
 
     steps:
-    - uses: actions/checkout@v6.0.1
+    - uses: actions/checkout@v6
       with:
           fetch-depth: 0 # avoid shallow clone so nbgv can do its work.
 
@@ -74,7 +74,7 @@ jobs:
         dotnet pack -c release
 
     # - name: Archive production artifacts
-    #   uses: actions/upload-artifact@v5
+    #   uses: actions/upload-artifact@v7
     #   with:
     #     name: dist-bin-and-packages
     #     retention-days: 5
@@ -104,7 +104,7 @@ jobs:
   #       pull-requests: write
   #     steps:
   #       - name: Checkout
-  #         uses: actions/checkout@v6.0.1
+  #         uses: actions/checkout@v6
   #         with:
   #           fetch-depth: 0 # avoid shallow clone so nbgv can do its work.
 
@@ -147,7 +147,7 @@ jobs:
     #     MSBUILDDISABLENODEREUSE: 1
 
     - name: ReportGenerator
-      uses: danielpalme/ReportGenerator-GitHub-Action@5.5.1
+      uses: danielpalme/ReportGenerator-GitHub-Action@5.5.4
       if: success() && matrix.os  == 'windows-latest'
       with:
         reports: ./artifacts/reports/**/*.cobertura.xml
@@ -156,7 +156,7 @@ jobs:
         reporttypes: HtmlInline;Cobertura;MarkdownSummaryGithub;lcov
 
     - name: Add Coverage PR Comment
-      uses: marocchino/sticky-pull-request-comment@v2.9.4
+      uses: marocchino/sticky-pull-request-comment@v3.0.2
       if: success() && matrix.os  == 'windows-latest' && github.event_name == 'pull_request'
       with:
         recreate: true
@@ -168,7 +168,7 @@ jobs:
       shell: bash
 
     - name: Upload Test Result Files
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v7
       if: always()
       with:
         name: test-results-${{ matrix.os }}
@@ -226,7 +226,7 @@ jobs:
 
     # - name: Upload coverage report artifact
     #   if: success() && matrix.os  == 'windows-latest'
-    #   uses: actions/upload-artifact@v5
+    #   uses: actions/upload-artifact@v7
     #   with:
     #     name: CoverageReport.${{matrix.os}}.${{matrix.framework}} # Artifact name
     #     path: ./artifacts/CoverageReport # Directory containing files to upload

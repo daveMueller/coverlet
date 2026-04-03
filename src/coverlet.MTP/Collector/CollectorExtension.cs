@@ -125,6 +125,7 @@ internal sealed class CollectorExtension : ITestHostProcessLifetimeHandler, ITes
       _configuration.SingleHit = config.UseSingleHit;
       _configuration.SkipAutoProps = config.SkipAutoProps;
       _configuration.formats = config.GetOutputFormats();
+      _configuration.FilePrefix = config.GetFilePrefix();
       _configuration.UseSourceLink = false;
 
       _logger.LogVerbose($"Test module path: {_testModulePath}");
@@ -151,9 +152,75 @@ internal sealed class CollectorExtension : ITestHostProcessLifetimeHandler, ITes
       _logger.LogError("Failed to initialize coverage instrumentation");
       _logger.LogError(ex);
       _coverageEnabled = false;
+
+      // Display error to user via IOutputDevice (visible in console output)
+      DisplayErrorToUserAsync(ex).ConfigureAwait(false).GetAwaiter().GetResult();
     }
 
     return Task.CompletedTask;
+  }
+
+  /// <summary>
+  /// Displays an error message to the user via the output device.
+  /// This ensures the error is visible in console output, not just diagnostic logs.
+  /// </summary>
+  private async Task DisplayErrorToUserAsync(Exception ex)
+  {
+    string errorMessage = FormatErrorForDisplay(ex);
+
+    await _outputDisplay.DisplayAsync(
+      this,
+      new FormattedTextOutputDeviceData($"[Coverlet] Coverage instrumentation failed:")
+      {
+        ForegroundColor = new SystemConsoleColor { ConsoleColor = ConsoleColor.Red }
+      },
+      CancellationToken.None);
+
+    await _outputDisplay.DisplayAsync(
+      this,
+      new FormattedTextOutputDeviceData($"  {errorMessage}")
+      {
+        ForegroundColor = new SystemConsoleColor { ConsoleColor = ConsoleColor.Yellow }
+      },
+      CancellationToken.None);
+
+    await _outputDisplay.DisplayAsync(
+      this,
+      new TextOutputDeviceData("  Use --diagnostic for detailed logs."),
+      CancellationToken.None);
+  }
+
+  /// <summary>
+  /// Formats an exception for user-friendly display.
+  /// </summary>
+  private static string FormatErrorForDisplay(Exception ex)
+  {
+    // Handle AggregateException by extracting inner exceptions
+    if (ex is AggregateException aggEx && aggEx.InnerExceptions.Count > 0)
+    {
+      var distinctMessages = aggEx.InnerExceptions
+        .Select(e => GetConciseErrorMessage(e))
+        .Distinct()
+        .ToList();
+
+      return string.Join(Environment.NewLine + "  ", distinctMessages);
+    }
+
+    return GetConciseErrorMessage(ex);
+  }
+
+  /// <summary>
+  /// Gets a concise error message suitable for console display.
+  /// </summary>
+  private static string GetConciseErrorMessage(Exception ex)
+  {
+    // For IOException (file access issues), include the specific file info
+    if (ex is IOException ioEx)
+    {
+      return ioEx.Message;
+    }
+
+    return ex.Message;
   }
 
   /// <summary>
@@ -337,7 +404,8 @@ internal sealed class CollectorExtension : ITestHostProcessLifetimeHandler, ITes
     ISourceRootTranslator sourceRootTranslator,
     IFileSystem fileSystem,
     string outputDirectory,
-    string[] formats)
+    string[] formats,
+    string? filePrefix = null)
   {
     var generatedReports = new List<string>();
 
@@ -354,14 +422,28 @@ internal sealed class CollectorExtension : ITestHostProcessLifetimeHandler, ITes
       }
       else
       {
-        string filename = $"coverage.{reporter.Extension}";
-        string reportPath = Path.Combine(outputDirectory, filename);
+        // Defensive validation of filePrefix to prevent path traversal
+        string? sanitizedPrefix = SanitizeFilePrefix(filePrefix);
+        string filename = string.IsNullOrEmpty(sanitizedPrefix)
+          ? $"coverage.{reporter.Extension}"
+          : $"{sanitizedPrefix}.coverage.{reporter.Extension}";
+        string filenameWithTimestamp = InjectTimestamp(filename, DateTime.UtcNow);
+        string reportPath = Path.Combine(outputDirectory, filenameWithTimestamp);
         fileSystem.WriteAllText(reportPath, reporter.Report(result, sourceRootTranslator));
         generatedReports.Add(reportPath);
       }
     }
 
     return generatedReports;
+  }
+
+  private static string InjectTimestamp(string filename, DateTime utcNow)
+  {
+    string timestamp = utcNow.ToString("ddMMyyHHmmssfff");
+    int lastDot = filename.LastIndexOf('.');
+    if (lastDot > 0)
+      return filename.Insert(lastDot, $".{timestamp}");
+    return $"{filename}.{timestamp}";
   }
 
   /// <summary>
@@ -417,7 +499,8 @@ internal sealed class CollectorExtension : ITestHostProcessLifetimeHandler, ITes
       sourceRootTranslator,
       fileSystem,
       outputDirectory,
-      _configuration.formats);
+      _configuration.formats,
+      _configuration.FilePrefix);
 
     // Display results
     await DisplayGeneratedReportsAsync(generatedReports, cancellation);
@@ -433,6 +516,48 @@ internal sealed class CollectorExtension : ITestHostProcessLifetimeHandler, ITes
 
     string? directory = Path.GetDirectoryName(_testModulePath);
     return directory ?? string.Empty;
+  }
+
+  /// <summary>
+  /// Sanitizes the file prefix to ensure it's a safe filename segment.
+  /// Returns null if the prefix is invalid or empty.
+  /// </summary>
+  private static string? SanitizeFilePrefix(string? filePrefix)
+  {
+    if (string.IsNullOrWhiteSpace(filePrefix))
+    {
+      return null;
+    }
+
+    // At this point, filePrefix is guaranteed to be non-null and non-whitespace
+    string prefix = filePrefix!;
+
+    // Reject directory separators (path traversal prevention)
+    if (prefix.Contains('/') || prefix.Contains('\\'))
+    {
+      return null;
+    }
+
+    // Reject rooted paths
+    if (Path.IsPathRooted(prefix))
+    {
+      return null;
+    }
+
+    // Reject path traversal patterns
+    if (prefix.Equals("..", StringComparison.Ordinal) || prefix.StartsWith("..", StringComparison.Ordinal))
+    {
+      return null;
+    }
+
+    // Reject invalid filename characters
+    char[] invalidChars = Path.GetInvalidFileNameChars();
+    if (prefix.IndexOfAny(invalidChars) >= 0)
+    {
+      return null;
+    }
+
+    return prefix;
   }
 
   private string? ResolveTestModulePath()
