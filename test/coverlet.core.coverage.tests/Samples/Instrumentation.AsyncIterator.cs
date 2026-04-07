@@ -38,9 +38,9 @@ namespace Coverlet.Core.CoverageSamples.Tests
   /// </summary>
   public class Issue1836
   {
-    public async IAsyncEnumerable<int> GetNumbersAsync([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<T> FunctionThatReturnsIAsyncEnumerable<T>([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-      int[] items = [1, 2];
+      T[] items = [default, default];
       foreach (var item in items)
       {
         await Task.CompletedTask;

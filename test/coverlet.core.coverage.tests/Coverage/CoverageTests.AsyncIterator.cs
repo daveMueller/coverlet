@@ -68,26 +68,26 @@ namespace Coverlet.CoreCoverage.Tests
       string path = Path.GetTempFileName();
       try
       {
-        FunctionExecutor.Run(async (string[] pathSerialize) =>
+        FunctionExecutor.RunInProcess(async (string[] pathSerialize) =>
         {
           CoveragePrepareResult coveragePrepareResult = await TestInstrumentationHelper.Run<Issue1836>(async instance =>
                   {
                     // Normal iteration covering all items
-                    await foreach (int item in (IAsyncEnumerable<int>)instance.GetNumbersAsync()) { }
+                    await foreach (int item in (IAsyncEnumerable<int>)instance.FunctionThatReturnsIAsyncEnumerable<int>()) { }
 
                     // Cancelled iteration covering the throw branch of the ternary
                     using var cts = new CancellationTokenSource();
                     cts.Cancel();
                     try
                     {
-                      await foreach (int item in (IAsyncEnumerable<int>)instance.GetNumbersAsync(cts.Token)) { }
+                      await foreach (int item in (IAsyncEnumerable<int>)instance.FunctionThatReturnsIAsyncEnumerable<int>(cts.Token)) { }
                     }
                     catch (OperationCanceledException) { }
                   }, persistPrepareResultToFile: pathSerialize[0]);
           return 0;
         }, [path]);
 
-        Core.Instrumentation.Document document = TestInstrumentationHelper.GetCoverageResult(path).Document("Instrumentation.AsyncIterator.cs");
+        Core.Instrumentation.Document document = TestInstrumentationHelper.GetCoverageResult(path).GenerateReport(show: true).Document("Instrumentation.AsyncIterator.cs");
         // Lines adjusted for the Issue1836 class location:
         // Line 43: int[] items = [1, 2]
         // Line 44: foreach (var item in items)
