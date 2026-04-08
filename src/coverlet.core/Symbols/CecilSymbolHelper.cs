@@ -964,15 +964,23 @@ namespace Coverlet.Core.Symbols
 
       if (branchIndex >= 2 &&
           instructions[branchIndex - 1].OpCode == OpCodes.Ldfld &&
-          instructions[branchIndex - 1].Operand is FieldDefinition field &&
-          field.FieldType.FullName.Equals("System.Threading.CancellationTokenSource") &&
-          field.FullName.EndsWith("x__combinedTokens") &&
-          (instructions[branchIndex - 2].OpCode == OpCodes.Ldarg ||
-           instructions[branchIndex - 2].OpCode == OpCodes.Ldarg_0))
+          IsCombinedCancellationTokensField(instructions[branchIndex - 1].Operand) &&
+          instructions[branchIndex - 2].OpCode == OpCodes.Ldarg ||
+          instructions[branchIndex - 2].OpCode == OpCodes.Ldarg_0)
       {
         return true;
       }
       return false;
+
+      static bool IsCombinedCancellationTokensField(object operand) =>
+        operand switch
+        {
+          FieldDefinition { FieldType.FullName: "System.Threading.CancellationTokenSource" } field
+            when field.FullName.EndsWith("x__combinedTokens") => true,
+          FieldReference { FieldType.FullName: "System.Threading.CancellationTokenSource" } fieldRef
+            when fieldRef.FullName.EndsWith("x__combinedTokens") => true,
+          _ => false
+        };
     }
 
     // https://github.com/dotnet/roslyn/blob/master/docs/compilers/CSharp/Expression%20Breakpoints.md
