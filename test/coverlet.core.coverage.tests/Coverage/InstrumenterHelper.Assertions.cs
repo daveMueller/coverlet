@@ -27,6 +27,7 @@ namespace Coverlet.CoreCoverage.Tests
       }
 
       TestInstrumentationHelper.GenerateHtmlReport(coverageResult, directory: directory);
+      Process.Start("cmd", "/C " + Path.GetFullPath(Path.Combine(directory, "index.htm")));
 
       if (show && Debugger.IsAttached)
       {

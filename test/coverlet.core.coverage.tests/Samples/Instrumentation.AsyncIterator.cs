@@ -8,40 +8,27 @@ using System.Threading.Tasks;
 
 namespace Coverlet.Core.CoverageSamples.Tests
 {
-  public class AsyncIterator
-  {
-    async public Task<int> Issue1104_Repro()
+    public class AsyncIterator
     {
-      int sum = 0;
+        async public Task<int> Issue1104_Repro()
+        {
+            int sum = 0;
 
-      await foreach (int result in CreateSequenceAsync())
-      {
-        sum += result;
-      }
+            await foreach (int result in CreateSequenceAsync())
+            {
+                sum += result;
+            }
 
-      return sum;
+            return sum;
+        }
+
+        async private IAsyncEnumerable<int> CreateSequenceAsync()
+        {
+            for (int i = 0; i < 100; ++i)
+            {
+                await Task.CompletedTask;
+                yield return i;
+            }
+        }
     }
-
-    async private IAsyncEnumerable<int> CreateSequenceAsync()
-    {
-      for (int i = 0; i < 100; ++i)
-      {
-        await Task.CompletedTask;
-        yield return i;
-      }
-    }
-  }
-
-  public class Issue1836
-  {
-    public async IAsyncEnumerable<T> FunctionThatReturnsIAsyncEnumerable<T>([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-      T[] items = [default, default];
-      foreach (var item in items)
-      {
-        await Task.CompletedTask;
-        yield return !cancellationToken.IsCancellationRequested ? item : throw new OperationCanceledException();
-      }
-    }
-  }
 }
