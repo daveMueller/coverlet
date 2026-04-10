@@ -971,17 +971,17 @@ namespace Coverlet.Core.Symbols
         return true;
       }
       return false;
-
-      static bool IsCombinedCancellationTokensField(object operand) =>
-        operand switch
-        {
-          FieldDefinition { FieldType.FullName: "System.Threading.CancellationTokenSource" } field
-            when field.FullName.EndsWith("x__combinedTokens") => true,
-          FieldReference { FieldType.FullName: "System.Threading.CancellationTokenSource" } fieldRef
-            when fieldRef.FullName.EndsWith("x__combinedTokens") => true,
-          _ => false
-        };
     }
+
+    private static bool IsCombinedCancellationTokensField(object operand) =>
+      operand switch
+      {
+        FieldDefinition { FieldType.FullName: "System.Threading.CancellationTokenSource" } field
+          when field.FullName.EndsWith("x__combinedTokens") => true,
+        FieldReference { FieldType.FullName: "System.Threading.CancellationTokenSource" } fieldRef
+          when fieldRef.FullName.EndsWith("x__combinedTokens") => true,
+        _ => false
+      };
 
     // https://github.com/dotnet/roslyn/blob/master/docs/compilers/CSharp/Expression%20Breakpoints.md
     private static bool SkipExpressionBreakpointsBranches(Instruction instruction) => instruction.Previous is not null && instruction.Previous.OpCode == OpCodes.Ldc_I4 &&
